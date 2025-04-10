@@ -1,18 +1,15 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import Home from '../pages/Home.vue';
+import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '@/views/HomeView.vue'
+import TripDetails from '@/views/TripDetails.vue'
 
 const routes = [
-  {
-    path: '/',
-    name: 'Home',
-    component: Home,
-  },
-];
+  { path: '/', name: 'Home', component: HomeView },
+  { path: '/trip/:id', name: 'TripDetails', component: TripDetails, props: true }
+]
 
 const router = createRouter({
-    history: createWebHistory(import.meta.env.VITE_BASE_URL),
-    routes,
-  });
-  
+  history: createWebHistory(),
+  routes
+})
 
-export default router;
+export default router
