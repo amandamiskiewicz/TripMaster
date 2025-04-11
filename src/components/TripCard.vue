@@ -4,7 +4,7 @@
       <div class="card-body">
         <h5 class="card-title">{{ trip.name }}</h5>
         <p class="card-text">{{ trip.country }}</p>
-        <router-link :to="`/trip/${trip.id}`" class="btn btn-primary">Zobacz podróż</router-link>
+        <router-link :to="`/trip/${trip.id}`" class="btn btn-green">Zobacz podróż</router-link>
       </div>
     </div>
   </div>
@@ -21,3 +21,16 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.btn-green {
+  background-color: #42b883 !important; 
+  color: white !important;
+  border: 1px solid #42b883 !important;
+}
+
+.btn-green:hover {
+  background-color: #388e73 !important;
+  border: 1px solid #388e73 !important;
+}
+</style>

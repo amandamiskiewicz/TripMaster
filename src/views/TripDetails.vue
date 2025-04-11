@@ -1,6 +1,5 @@
 <template>
   <div class="container py-5">
-    <!-- Przycisk powrotu do strony głównej -->
     <router-link to="/" class="btn btn-outline-secondary mb-3">Powrót</router-link>
     
     <h2>{{ trip.name }} - Szczegóły</h2>
@@ -8,7 +7,6 @@
     <p><strong>Data wyjazdu:</strong> {{ trip.departureDate || 'Brak danych' }}</p>
     <p><strong>Data przyjazdu:</strong> {{ trip.arrivalDate || 'Brak danych' }}</p>
 
-    <!-- Przycisk do przejścia do różnych sekcji -->
     <div class="d-flex gap-3 my-4">
       <button class="btn btn-primary" @click="addTravelPoints">Dodaj punkty podróży</button>
       <button class="btn btn-primary" @click="planBudget">Planowanie budżetu</button>
@@ -16,7 +14,6 @@
       <button class="btn btn-primary" @click="addReservations">Rezerwacje</button>
     </div>
 
-    <!-- Przełączanie między sekcjami -->
     <div v-if="isTravelPointsVisible">
       <TravelPoints :trip="trip" @close="closeSection" />
     </div>
@@ -36,7 +33,6 @@
 </template>
 
 <script>
-// Importowanie komponentów
 import TravelPoints from '@/components/TravelPoints.vue'
 import Budget from '@/components/Budget.vue'
 import PackingList from '@/components/PackingList.vue'
@@ -67,7 +63,6 @@ export default {
     }
   },
   methods: {
-    // Przełączanie widoków
     addTravelPoints() {
       this.isTravelPointsVisible = true;
       this.isBudgetVisible = false;
@@ -103,5 +98,5 @@ export default {
 </script>
 
 <style scoped>
-/* Możesz dodać własne style */
+
 </style>

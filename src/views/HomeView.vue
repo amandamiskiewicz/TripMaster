@@ -1,20 +1,18 @@
 <template>
   <div class="container py-5">
-    <!-- Nagłówek -->
-    <h1 class="text-center mb-4 display-4 fw-bold text-primary">Trip Master</h1>
 
-    <!-- Menu przycisków -->
+    <h1 class="text-center mb-4 display-4 fw-bold text-green">Trip Master</h1>
+
     <div class="d-flex justify-content-center gap-3 mb-5 flex-wrap">
-      <router-link to="/trips" class="btn btn-outline-primary">Trips</router-link>
-      <router-link to="/diary" class="btn btn-outline-primary">Travel Diary</router-link>
-      <router-link to="/account" class="btn btn-outline-primary">Konto użytkownika</router-link>
-      <router-link to="/login" class="btn btn-outline-primary">Logowanie</router-link>
+      <router-link to="/trips" class="btn btn-green">Trips</router-link>
+      <router-link to="/diary" class="btn btn-green">Travel Diary</router-link>
+      <router-link to="/account" class="btn btn-green">Konto użytkownika</router-link>
+      <router-link to="/login" class="btn btn-green">Logowanie</router-link>
     </div>
 
-    <!-- Lista podróży -->
     <div v-if="trips.length === 0" class="text-center text-muted mt-5">
       <p class="fs-5">Nie masz jeszcze żadnych podróży 😢</p>
-      <button class="btn btn-primary" @click="showAddTripModal">Dodaj swoją pierwszą podróż</button>
+      <button class="btn btn-green" @click="showAddTripModal">Dodaj swoją pierwszą podróż</button>
     </div>
 
     <div v-else class="row">
@@ -25,35 +23,97 @@
       />
     </div>
 
-    <!-- Modal Dodania podróży -->
+    <div v-if="trips.length > 0" class="d-flex justify-content-center mt-4">
+      <button class="btn btn-green" @click="showAddTripModal">Dodaj nową podróż</button>
+    </div>
+
     <AddTripModal v-if="isModalVisible" @close="closeModal" @add-trip="addTrip" />
   </div>
 </template>
 
 <script>
-import TripCard from '@/components/TripCard.vue'
-import AddTripModal from '@/components/AddTripModal.vue'
+import { ref, onMounted } from 'vue';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/firebase'; 
+import TripCard from '@/components/TripCard.vue';
+import AddTripModal from '@/components/AddTripModal.vue';
 
 export default {
   name: 'HomeView',
   components: { TripCard, AddTripModal },
-  data() {
+  setup() {
+    const trips = ref([]);
+    const isModalVisible = ref(false);
+
+    const loadTrips = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'trips'));
+        trips.value = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (error) {
+        console.error('Błąd podczas ładowania podróży:', error);
+      }
+    };
+
+    const addTrip = (newTrip) => {
+      trips.value.push(newTrip);
+      closeModal(); 
+    };
+
+    const showAddTripModal = () => {
+      isModalVisible.value = true;
+    };
+
+    const closeModal = () => {
+      isModalVisible.value = false;
+    };
+
+    onMounted(loadTrips);
+
     return {
-      trips: [], // tutaj będą przechowywane podróże
-      isModalVisible: false
-    }
-  },
-  methods: {
-    showAddTripModal() {
-      this.isModalVisible = true;
-    },
-    closeModal() {
-      this.isModalVisible = false;
-    },
-    addTrip(newTrip) {
-      this.trips.push(newTrip); 
-      this.closeModal();
-    }
+      trips,
+      isModalVisible,
+      showAddTripModal,
+      closeModal,
+      addTrip
+    };
   }
-}
+};
 </script>
+
+<style scoped>
+
+.container {
+  max-width: 1000px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.fs-5 {
+  font-size: 1.25rem;
+}
+
+.text-muted {
+  color: #6c757d;
+}
+
+
+.btn-green {
+  background-color: #1e88e5 !important; 
+  color: white !important;
+  border: 1px solid #1e88e5 !important;
+}
+
+.btn-green:hover {
+  background-color: #388e73 !important;
+  border: 1px solid #388e73 !important;
+}
+
+.text-green {
+  color: #42b883 !important;
+}
+</style>

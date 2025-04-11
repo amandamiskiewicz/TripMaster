@@ -10,11 +10,8 @@
           <form @submit.prevent="submitForm">
             <div class="mb-3">
               <label for="country" class="form-label">Kraj</label>
-              <select v-model="newTrip.country" id="country" class="form-select">
-                <option value="Włochy">Włochy</option>
-                <option value="Hiszpania">Hiszpania</option>
-                <option value="Francja">Francja</option>
-                <!-- Dodaj więcej krajów jeśli chcesz -->
+              <select v-model="newTrip.country" id="country" class="form-select" required>
+                <option v-for="country in countries" :key="country" :value="country">{{ country }}</option>
               </select>
             </div>
             <div class="mb-3">
@@ -31,6 +28,7 @@
             </div>
             <button type="submit" class="btn btn-primary">Dodaj podróż</button>
           </form>
+          <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
         </div>
       </div>
     </div>
@@ -38,36 +36,77 @@
 </template>
 
 <script>
+import { ref, onMounted } from 'vue';
+import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
+
 export default {
   name: 'AddTripModal',
-  data() {
-    return {
-      newTrip: {
-        country: '',
-        name: '',
-        departureDate: '',
-        arrivalDate: ''
+  setup(_, { emit }) {
+    const newTrip = ref({
+      country: '',
+      name: '',
+      departureDate: '',
+      arrivalDate: ''
+    });
+
+    const errorMessage = ref('');
+    const countries = ref([]);
+
+    // api kraje
+    const fetchCountries = async () => {
+      try {
+        const response = await fetch('https://restcountries.com/v3.1/all');
+        const data = await response.json();
+        countries.value = data.map(country => country.name.common).sort();
+      } catch (error) {
+        console.error("Błąd ładowania krajów:", error);
       }
-    }
-  },
-  methods: {
-    submitForm() {
-      this.$emit('add-trip', { 
-        ...this.newTrip, 
-        id: Date.now() // Emitowanie nowej podróży z unikalnym ID
-      });
-      this.closeModal();
-    },
-    closeModal() {
-      this.$emit('close'); // Zamykanie modala
-    }
+    };
+
+
+    const submitForm = async () => {
+      try {
+        const docRef = await addDoc(collection(db, 'trips'), {
+          ...newTrip.value,
+          createdAt: new Date()
+        });
+        emit('add-trip', {
+          id: docRef.id,
+          ...newTrip.value,
+          createdAt: new Date()
+        });
+        closeModal();
+      } catch (error) {
+        errorMessage.value = 'Błąd zapisu do bazy: ' + error.message;
+      }
+    };
+
+
+    const closeModal = () => {
+      emit('close');
+    };
+
+    onMounted(fetchCountries);
+
+    return {
+      newTrip,
+      countries,
+      submitForm,
+      closeModal,
+      errorMessage
+    };
   }
-}
+};
 </script>
 
 <style scoped>
 .modal-content {
   max-width: 500px;
   margin: auto;
+}
+
+.error {
+  color: red;
 }
 </style>
