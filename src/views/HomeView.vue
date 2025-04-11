@@ -1,12 +1,14 @@
 <template>
   <div class="container py-5">
+    <!-- Nagłówek -->
     <h1 class="text-center mb-4 display-4 fw-bold text-primary">Trip Master</h1>
 
+    <!-- Menu przycisków -->
     <div class="d-flex justify-content-center gap-3 mb-5 flex-wrap">
-      <button class="btn btn-outline-primary">Trips</button>
-      <button class="btn btn-outline-primary">Budget</button>
-      <button class="btn btn-outline-primary">Packing Lists</button>
-      <button class="btn btn-outline-primary">Travel Diary</button>
+      <router-link to="/trips" class="btn btn-outline-primary">Trips</router-link>
+      <router-link to="/diary" class="btn btn-outline-primary">Travel Diary</router-link>
+      <router-link to="/account" class="btn btn-outline-primary">Konto użytkownika</router-link>
+      <router-link to="/login" class="btn btn-outline-primary">Logowanie</router-link>
     </div>
 
     <!-- Lista podróży -->
@@ -37,7 +39,7 @@ export default {
   components: { TripCard, AddTripModal },
   data() {
     return {
-      trips: [],
+      trips: [], // tutaj będą przechowywane podróże
       isModalVisible: false
     }
   },

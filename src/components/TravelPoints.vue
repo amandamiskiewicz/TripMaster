@@ -1,90 +1,92 @@
 <template>
   <div class="container">
-    <h3>Punkty podróży: {{ trip.name }}</h3>
+    <h3>Punkty do zwiedzenia - {{ trip.name }}</h3>
 
-    <!-- Pole wyszukiwania punktów podróży -->
+    <!-- Formularz dodawania nowego punktu -->
     <div class="mb-3">
-      <label for="searchPoint" class="form-label">Wyszukaj punkt podróży</label>
+      <label for="newPoint" class="form-label">Nowy punkt do zwiedzenia</label>
       <input
-        v-model="searchQuery"
+        v-model="newPoint"
         type="text"
-        id="searchPoint"
+        id="newPoint"
         class="form-control"
-        placeholder="Wpisz nazwę punktu..."
-        @input="filterPoints"
+        placeholder="Wpisz nazwę miejsca, które chcesz odwiedzić"
       />
+      <button class="btn btn-primary mt-2" @click="addPoint">Dodaj punkt</button>
     </div>
 
-    <!-- Wyświetlanie sugerowanych punktów -->
-    <ul v-if="filteredPoints.length > 0" class="list-group mt-3">
-      <li
-        v-for="(point, index) in filteredPoints"
-        :key="index"
-        class="list-group-item"
-        @click="selectPoint(point)"
-      >
-        {{ point }}
-      </li>
-    </ul>
-
-    <!-- Formularz do dodawania nowych punktów podróży -->
-    <form v-if="!searchQuery" @submit.prevent="addPoint">
-      <div class="mb-3">
-        <label for="newPoint" class="form-label">Nowy punkt podróży</label>
-        <input v-model="newPoint" type="text" id="newPoint" class="form-control" required />
-      </div>
-      <button type="submit" class="btn btn-primary">Dodaj punkt</button>
-    </form>
-
-    <!-- Lista zapisanych punktów -->
-    <ul class="list-group mt-3" v-if="travelPoints.length > 0">
+    <!-- Lista dodanych punktów (opcjonalnie) -->
+    <ul class="list-group mb-3">
       <li v-for="(point, index) in travelPoints" :key="index" class="list-group-item">
-        {{ point }}
+        {{ point.name }} ({{ point.lat.toFixed(4) }}, {{ point.lng.toFixed(4) }})
       </li>
     </ul>
 
-    <!-- Przycisk do zamknięcia sekcji -->
-    <button class="btn btn-secondary mt-3" @click="$emit('close')">Zamknij</button>
+    <!-- Mapa wyświetlająca punkty -->
+    <div id="map" style="height: 400px;"></div>
   </div>
 </template>
 
 <script>
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+
 export default {
   name: 'TravelPoints',
   props: ['trip'],
   data() {
     return {
-      searchQuery: '',
-      filteredPoints: [], // Lista filtrowanych punktów na podstawie wyszukiwania
-      travelPoints: ['Punkt A', 'Punkt B', 'Punkt C', 'Punkt D'], // Przykładowe punkty
-      newPoint: ''
-    };
+      // Lista punktów – każdy punkt posiada nazwę oraz współrzędne
+      travelPoints: [
+        // Przykładowe punkty, ewentualnie pusta lista
+        // { name: 'Stare Miasto', lat: 52.2297, lng: 21.0122 }
+      ],
+      newPoint: '',
+      map: null
+    }
   },
   methods: {
-    // Filtrujemy punkty podróży na podstawie wpisywanego tekstu
-    filterPoints() {
-      if (this.searchQuery) {
-        this.filteredPoints = this.travelPoints.filter((point) =>
-          point.toLowerCase().includes(this.searchQuery.toLowerCase())
-        );
-      } else {
-        this.filteredPoints = [];
-      }
-    },
-
-    // Dodajemy nowy punkt
     addPoint() {
-      if (this.newPoint) {
-        this.travelPoints.push(this.newPoint);
-        this.newPoint = '';
+      if (this.newPoint.trim()) {
+        // Symulujemy współrzędne – w rzeczywistej aplikacji użyj geokodowania
+        const lat = 52.2297 + Math.random() * 0.02 - 0.01
+        const lng = 21.0122 + Math.random() * 0.02 - 0.01
+        const point = {
+          name: this.newPoint.trim(),
+          lat,
+          lng
+        }
+        this.travelPoints.push(point)
+        this.addMarker(point)
+        this.newPoint = ''
       }
     },
-
-    // Wybieramy punkt z listy sugerowanych punktów
-    selectPoint(point) {
-      this.newPoint = point;
-      this.filteredPoints = [];
+    addMarker(point) {
+      if (this.map) {
+        L.marker([point.lat, point.lng]).addTo(this.map)
+          .bindPopup(point.name)
+      }
     }
+  },
+  mounted() {
+    // Inicjalizacja mapy, centrowanej na przykładowych współrzędnych (np. Warszawa)
+    this.map = L.map('map').setView([52.2297, 21.0122], 13)
+    
+    // Dodanie warstwy kafelków z OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(this.map)
+    
+    // Jeśli istnieją już punkty, dodajemy marker dla każdego z nich
+    this.travelPoints.forEach(point => {
+      this.addMarker(point)
+    })
   }
 }
 </script>
+
+<style scoped>
+#map {
+  margin-top: 1rem;
+}
+</style>

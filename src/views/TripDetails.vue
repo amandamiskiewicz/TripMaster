@@ -1,5 +1,8 @@
 <template>
   <div class="container py-5">
+    <!-- Przycisk powrotu do strony głównej -->
+    <router-link to="/" class="btn btn-outline-secondary mb-3">Powrót</router-link>
+    
     <h2>{{ trip.name }} - Szczegóły</h2>
     <p><strong>Kraj:</strong> {{ trip.country }}</p>
     <p><strong>Data wyjazdu:</strong> {{ trip.departureDate || 'Brak danych' }}</p>
