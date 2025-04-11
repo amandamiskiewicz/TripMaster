@@ -4,6 +4,7 @@ import TripDetails from '@/views/TripDetails.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: HomeView },
+  { path: '/trips', name: 'Trips', component: HomeView },
   { path: '/trip/:id', name: 'TripDetails', component: TripDetails, props: true }
 ]
 
