@@ -1,24 +1,24 @@
 <template>
   <div class="container py-4">
-    <h3>Rezerwacje - {{ trip.name }}</h3>
+    <h3>Reservations - {{ trip.name }}</h3>
 
     <div class="mb-3">
-      <input v-model="newReservation.name" placeholder="Nazwa rezerwacji (np. Lot do Paryża)" class="form-control mb-2" />
-      <input v-model="newReservation.link" placeholder="Link do rezerwacji (opcjonalnie)" class="form-control mb-2" />
+      <input v-model="newReservation.name" placeholder="Reservation name (e.g. Flight to Paris)" class="form-control mb-2" />
+      <input v-model="newReservation.link" placeholder="Reservation link (optional)" class="form-control mb-2" />
       <input type="file" @change="handleFileUpload" class="form-control mb-2" />
-      <button class="btn btn-primary" @click="addReservation">Dodaj rezerwację</button>
+      <button class="btn btn-primary" @click="addReservation">Add Reservation</button>
     </div>
 
     <div v-if="reservations.length">
-      <h4>Lista rezerwacji</h4>
+      <h4>Reservations List</h4>
       <ul class="list-group">
         <li v-for="(res, idx) in reservations" :key="idx" class="list-group-item">
           <strong>{{ res.name }}</strong>
           <div v-if="res.link">
-            <a :href="res.link" target="_blank">Otwórz link</a>
+            <a :href="res.link" target="_blank">Open Link</a>
           </div>
           <div v-if="res.file">
-            <a :href="res.file" target="_blank">Zobacz załącznik</a>
+            <a :href="res.file" target="_blank">View Attachment</a>
           </div>
         </li>
       </ul>

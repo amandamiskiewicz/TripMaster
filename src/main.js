@@ -3,6 +3,8 @@ import App from './App.vue';
 import router from './router';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { registerSW } from "virtual:pwa-register";
+import 'leaflet/dist/leaflet.css';
+
 
 createApp(App)
   .use(router)  

@@ -1,6 +1,6 @@
 <template>
   <div class="container py-4">
-    <h3>Lista pakowania - {{ trip.name }}</h3>
+    <h3>Packing List - {{ trip.name }}</h3>
 
     <div class="row mb-4">
       <div
@@ -12,34 +12,34 @@
           <div class="card-body text-center">
             <h5 class="card-title">{{ category.name }}</h5>
             <p class="card-text">
-              Do odhaczenia: {{ countRemaining(category.name) }} / {{ category.items.length }}
+              checked off: {{ countRemaining(category.name) }} / {{ category.items.length }}
             </p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Dodawanie nowej kategorii lub rzeczy -->
+    <!-- Adding a new category or item -->
     <div class="mb-4 d-flex gap-3">
-      <button class="btn btn-primary" @click="showAddCategory = true">Dodaj kategorię</button>
-      <button class="btn btn-success" @click="showAddItem = true" :disabled="!selectedCategory">Dodaj rzecz do {{ selectedCategory }}</button>
+      <button class="btn btn-primary" @click="showAddCategory = true">Add Category</button>
+      <button class="btn btn-success" @click="showAddItem = true" :disabled="!selectedCategory">Add Item {{ selectedCategory }}</button>
     </div>
 
-    <!-- Formularz dodawania kategorii -->
+    <!-- Add Category Form -->
     <div v-if="showAddCategory" class="mb-3">
-      <input v-model="newCategory" placeholder="Nazwa kategorii" class="form-control w-50 d-inline" />
-      <button class="btn btn-secondary ms-2" @click="addCategory">Dodaj</button>
+      <input v-model="newCategory" placeholder="Category Name" class="form-control w-50 d-inline" />
+      <button class="btn btn-secondary ms-2" @click="addCategory">Add</button>
     </div>
 
-    <!-- Formularz dodawania rzeczy -->
+    <!-- Add Item Form -->
     <div v-if="showAddItem && selectedCategory" class="mb-3">
-      <input v-model="newItem" placeholder="Nazwa rzeczy" class="form-control w-50 d-inline" />
-      <button class="btn btn-secondary ms-2" @click="addItem">Dodaj</button>
+      <input v-model="newItem" placeholder="Item Name" class="form-control w-50 d-inline" />
+      <button class="btn btn-secondary ms-2" @click="addItem">Add</button>
     </div>
 
-    <!-- Lista rzeczy w wybranej kategorii -->
+    <!-- List of Items in the Selected Category -->
     <div v-if="selectedCategory">
-      <h4>Rzeczy w kategorii: {{ selectedCategory }}</h4>
+      <h4>Items in Category: {{ selectedCategory }}</h4>
       <ul class="list-group w-75">
         <li v-for="(item, idx) in getItemsForCategory(selectedCategory)" :key="idx" class="list-group-item d-flex justify-content-between align-items-center">
           <div>

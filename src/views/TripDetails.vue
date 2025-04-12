@@ -1,17 +1,18 @@
 <template>
   <div class="container py-5">
-    <router-link to="/" class="btn btn-outline-secondary mb-3">Powrót</router-link>
+    <router-link to="/home" class="btn btn-outline-secondary mb-3">Back</router-link>
     
-    <h2>{{ trip.name }} - Szczegóły</h2>
-    <p><strong>Kraj:</strong> {{ trip.country }}</p>
-    <p><strong>Data wyjazdu:</strong> {{ trip.departureDate || 'Brak danych' }}</p>
-    <p><strong>Data przyjazdu:</strong> {{ trip.arrivalDate || 'Brak danych' }}</p>
+    <h2>{{ trip ? trip.name : 'Loading...' }} - Details</h2>
+    <p><strong>Country:</strong> {{ trip ? trip.country : 'No data' }}</p>
+    <p><strong>Departure Date:</strong> {{ trip ? trip.departureDate : 'No data' }}</p>
+    <p><strong>Arrival Date:</strong> {{ trip ? trip.arrivalDate : 'No data' }}</p>
 
     <div class="d-flex gap-3 my-4">
-      <button class="btn btn-green" @click="addTravelPoints">Dodaj punkty podróży</button>
-      <button class="btn btn-green" @click="planBudget">Planowanie budżetu</button>
-      <button class="btn btn-green" @click="addPackingList">Dodaj do listy pakowania</button>
-      <button class="btn btn-green" @click="addReservations">Rezerwacje</button>
+      <button class="btn btn-green" @click="addTravelPoints">Add Travel Points</button>
+      <button class="btn btn-green" @click="planBudget">Budget Planning</button>
+      <button class="btn btn-green" @click="addPackingList">Add to Packing List</button>
+      <button class="btn btn-green" @click="addReservations">Reservations</button>
+      <button class="btn btn-green" @click="addTravelDiary">Travel Diary</button>
     </div>
 
     <div v-if="isTravelPointsVisible">
@@ -29,6 +30,10 @@
     <div v-if="isReservationsVisible">
       <Reservations :trip="trip" @close="closeSection" />
     </div>
+
+    <div v-if="isTravelDiaryVisible">
+      <TravelDiary :trip="trip" @close="closeSection" />
+    </div>
   </div>
 </template>
 
@@ -40,6 +45,7 @@ import TravelPoints from '@/components/TravelPoints.vue'
 import Budget from '@/components/Budget.vue'
 import PackingList from '@/components/PackingList.vue'
 import Reservations from '@/components/Reservations.vue'
+import TravelDiary from '@/components/TravelDiary.vue'  // Importing new component
 
 export default {
   name: 'TripDetails',
@@ -47,7 +53,8 @@ export default {
     TravelPoints,
     Budget,
     PackingList,
-    Reservations
+    Reservations,
+    TravelDiary  // Adding new component
   },
   props: ['id'], 
   setup(props) {
@@ -56,7 +63,7 @@ export default {
     const isBudgetVisible = ref(false);
     const isPackingListVisible = ref(false);
     const isReservationsVisible = ref(false);
-
+    const isTravelDiaryVisible = ref(false);  // State for Travel Diary
 
     const loadTrip = async () => {
       try {
@@ -66,10 +73,10 @@ export default {
         if (tripDoc.exists()) {
           trip.value = tripDoc.data(); 
         } else {
-          console.log('Brak podróży o tym id');
+          console.log('No trip found with this ID');
         }
       } catch (error) {
-        console.error("Błąd podczas ładowania podróży:", error);
+        console.error("Error loading trip:", error);
       }
     };
 
@@ -82,6 +89,7 @@ export default {
       isBudgetVisible.value = false;
       isPackingListVisible.value = false;
       isReservationsVisible.value = false;
+      isTravelDiaryVisible.value = false;
     };
 
     const planBudget = () => {
@@ -89,6 +97,7 @@ export default {
       isBudgetVisible.value = true;
       isPackingListVisible.value = false;
       isReservationsVisible.value = false;
+      isTravelDiaryVisible.value = false;
     };
 
     const addPackingList = () => {
@@ -96,6 +105,7 @@ export default {
       isBudgetVisible.value = false;
       isPackingListVisible.value = true;
       isReservationsVisible.value = false;
+      isTravelDiaryVisible.value = false;
     };
 
     const addReservations = () => {
@@ -103,6 +113,15 @@ export default {
       isBudgetVisible.value = false;
       isPackingListVisible.value = false;
       isReservationsVisible.value = true;
+      isTravelDiaryVisible.value = false;
+    };
+
+    const addTravelDiary = () => {
+      isTravelPointsVisible.value = false;
+      isBudgetVisible.value = false;
+      isPackingListVisible.value = false;
+      isReservationsVisible.value = false;
+      isTravelDiaryVisible.value = true;  // Show Travel Diary
     };
 
     const closeSection = () => {
@@ -110,6 +129,7 @@ export default {
       isBudgetVisible.value = false;
       isPackingListVisible.value = false;
       isReservationsVisible.value = false;
+      isTravelDiaryVisible.value = false;
     };
 
     return {
@@ -118,10 +138,12 @@ export default {
       isBudgetVisible,
       isPackingListVisible,
       isReservationsVisible,
+      isTravelDiaryVisible,
       addTravelPoints,
       planBudget,
       addPackingList,
       addReservations,
+      addTravelDiary,  // Adding method for Travel Diary
       closeSection
     };
   }

@@ -1,13 +1,13 @@
 <template>
   <div class="container py-4">
-    <h3>Budżet podróży - {{ trip.name }}</h3>
+    <h3>Travel Budget - {{ trip.name }}</h3>
 
-    <!-- Sekcja z podsumowaniem budżetu -->
+    <!-- Budget Summary Section -->
     <div class="row mb-4">
       <div class="col-md-4">
         <div class="card text-white bg-success mb-3">
           <div class="card-body">
-            <h5 class="card-title">Pozostało</h5>
+            <h5 class="card-title">Remaining</h5>
             <p class="card-text">
               {{ remainingBudget }} PLN
             </p>
@@ -17,7 +17,7 @@
       <div class="col-md-4">
         <div class="card text-white bg-danger mb-3">
           <div class="card-body">
-            <h5 class="card-title">Wydatki</h5>
+            <h5 class="card-title">Spent</h5>
             <p class="card-text">
               {{ totalSpent }} PLN
             </p>
@@ -27,27 +27,27 @@
       <div class="col-md-4">
         <div class="card text-white bg-info mb-3">
           <div class="card-body">
-            <h5 class="card-title">Całkowity budżet</h5>
+            <h5 class="card-title">Total Budget</h5>
             <input v-model.number="totalBudget" type="number" class="form-control" /> PLN
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Formularz dodawania wydatku -->
+    <!-- Add Expense Form -->
     <div class="mb-4">
-      <h4>Dodaj nowy wydatek</h4>
+      <h4>Add New Expense</h4>
       <div class="mb-2">
         <input
           v-model="newExpense.name"
-          placeholder="Nazwa wydatku (wymagane)"
+          placeholder="Expense Name (required)"
           class="form-control"
         />
       </div>
       <div class="mb-2">
         <input
           v-model.number="newExpense.amount"
-          placeholder="Kwota wydatku (PLN, wymagana)"
+          placeholder="Expense Amount (PLN, required)"
           type="number"
           class="form-control"
         />
@@ -55,18 +55,18 @@
       <div class="mb-2">
         <input
           v-model.number="newExpense.persons"
-          placeholder="Liczba osób do podziału (opcjonalnie)"
+          placeholder="Number of persons to split (optional)"
           type="number"
           class="form-control"
         />
         <small class="text-muted" v-if="newExpense.persons > 0">
-          Równy podział: {{ (newExpense.amount / newExpense.persons).toFixed(2) }} PLN na osobę
+          Even split: {{ (newExpense.amount / newExpense.persons).toFixed(2) }} PLN per person
         </small>
       </div>
       <div class="mb-2">
         <input
           v-model="newExpense.description"
-          placeholder="Opis wydatku (opcjonalnie)"
+          placeholder="Expense Description (optional)"
           class="form-control"
         />
       </div>
@@ -75,7 +75,7 @@
           v-model="newExpense.date"
           type="date"
           class="form-control"
-          placeholder="Data wydatku (opcjonalnie)"
+          placeholder="Expense Date (optional)"
         />
       </div>
       <div class="mb-2">
@@ -84,33 +84,33 @@
           @change="handleFileUpload"
           class="form-control"
         />
-        <small class="text-muted">Załącz zdjęcie/plik (opcjonalnie)</small>
+        <small class="text-muted">Attach photo/file (optional)</small>
       </div>
-      <button class="btn btn-primary" @click="addExpense">Dodaj wydatek</button>
+      <button class="btn btn-primary" @click="addExpense">Add Expense</button>
     </div>
 
-    <!-- Lista wydatków -->
+    <!-- Expense List -->
     <div v-if="expenses.length">
-      <h4>Wydatki</h4>
+      <h4>Expenses</h4>
       <ul class="list-group">
         <li v-for="(exp, idx) in expenses" :key="idx" class="list-group-item">
           <div class="d-flex justify-content-between align-items-center flex-wrap">
             <div>
               <strong>{{ exp.name }}</strong> - {{ exp.amount }} PLN
               <div class="text-muted">
-                <span v-if="exp.date">Data: {{ exp.date }} | </span>
-                <span v-if="exp.description">Opis: {{ exp.description }} | </span>
+                <span v-if="exp.date">Date: {{ exp.date }} | </span>
+                <span v-if="exp.description">Description: {{ exp.description }} | </span>
                 <span v-if="exp.persons">
-                  Podzielone między: {{ exp.persons }} ({{ (exp.amount / exp.persons).toFixed(2) }} PLN/os.) |
+                  Split between: {{ exp.persons }} ({{ (exp.amount / exp.persons).toFixed(2) }} PLN/person) |
                 </span>
               </div>
               <div v-if="exp.file">
-                <a :href="exp.file" target="_blank">Zobacz załącznik</a>
+                <a :href="exp.file" target="_blank">View Attachment</a>
               </div>
             </div>
             <div class="form-check">
               <input type="checkbox" v-model="exp.paid" class="form-check-input" :id="'paid-' + idx" />
-              <label :for="'paid-' + idx" class="form-check-label">Opłacone</label>
+              <label :for="'paid-' + idx" class="form-check-label">Paid</label>
             </div>
           </div>
         </li>
@@ -125,12 +125,12 @@ export default {
   props: ['trip'],
   data() {
     return {
-      totalBudget: 0,  // Możliwość edycji budżetu
+      totalBudget: 0,  // Budget editing capability
       expenses: [],
       newExpense: {
         name: '',
-        amount: 0,
-        persons: 0, // Opcjonalnie liczba osób do podziału kwoty
+        amount: '',
+        persons: '', // Optional number of persons to split the amount
         description: '',
         date: '',
         file: null,
@@ -155,10 +155,10 @@ export default {
       }
     },
     addExpense() {
-      // Sprawdzenie, czy wymagane pola zostały wypełnione
+      // Check if required fields are filled
       if (this.newExpense.name.trim() && this.newExpense.amount > 0) {
         this.expenses.push({ ...this.newExpense });
-        // Reset formularza wydatku
+        // Reset the expense form
         this.newExpense = {
           name: '',
           amount: 0,
@@ -169,7 +169,7 @@ export default {
           paid: false
         };
       } else {
-        alert('Wprowadź nazwę wydatku i kwotę większą od 0!');
+        alert('Please enter the expense name and an amount greater than 0!');
       }
     }
   }

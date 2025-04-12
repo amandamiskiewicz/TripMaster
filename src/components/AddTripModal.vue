@@ -3,30 +3,30 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Dodaj podróż</h5>
+          <h5 class="modal-title">Add Trip</h5>
           <button type="button" class="btn-close" @click="closeModal"></button>
         </div>
         <div class="modal-body">
           <form @submit.prevent="submitForm">
             <div class="mb-3">
-              <label for="country" class="form-label">Kraj</label>
+              <label for="country" class="form-label">Country</label>
               <select v-model="newTrip.country" id="country" class="form-select" required>
                 <option v-for="country in countries" :key="country" :value="country">{{ country }}</option>
               </select>
             </div>
             <div class="mb-3">
-              <label for="name" class="form-label">Nazwa podróży</label>
+              <label for="name" class="form-label">Trip Name</label>
               <input v-model="newTrip.name" type="text" id="name" class="form-control" required />
             </div>
             <div class="mb-3">
-              <label for="departureDate" class="form-label">Data wyjazdu (opcjonalnie)</label>
+              <label for="departureDate" class="form-label">Departure Date (optional)</label>
               <input v-model="newTrip.departureDate" type="date" id="departureDate" class="form-control" />
             </div>
             <div class="mb-3">
-              <label for="arrivalDate" class="form-label">Data przyjazdu (opcjonalnie)</label>
+              <label for="arrivalDate" class="form-label">Arrival Date (optional)</label>
               <input v-model="newTrip.arrivalDate" type="date" id="arrivalDate" class="form-control" />
             </div>
-            <button type="submit" class="btn btn-primary">Dodaj podróż</button>
+            <button type="submit" class="btn btn-primary">Add Trip</button>
           </form>
           <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
         </div>
@@ -59,7 +59,7 @@ export default {
       if (user) {
         userId.value = user.uid;
       } else {
-        errorMessage.value = 'Musisz być zalogowany, aby dodać podróż.';
+        errorMessage.value = 'You must be logged in to add a trip.';
       }
     });
 
@@ -69,13 +69,13 @@ export default {
         const data = await response.json();
         countries.value = data.map(country => country.name.common).sort();
       } catch (error) {
-        console.error("Błąd ładowania krajów:", error);
+        console.error("Error loading countries:", error);
       }
     };
 
     const submitForm = async () => {
       if (!userId.value) {
-        errorMessage.value = 'Musisz być zalogowany, aby dodać podróż.';
+        errorMessage.value = 'You must be logged in to add a trip.';
         return;
       }
 
@@ -95,7 +95,7 @@ export default {
 
         closeModal();
       } catch (error) {
-        errorMessage.value = 'Błąd zapisu do bazy: ' + error.message;
+        errorMessage.value = 'Error saving to database: ' + error.message;
       }
     };
 

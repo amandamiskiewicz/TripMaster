@@ -1,179 +1,178 @@
 <template>
-  <div class="container">
-    <h3>Punkty do zwiedzenia - {{ trip.name }}</h3>
+  <div class="container py-4">
+    <h2 class="mb-4">Your Travel Points</h2>
 
-    <div class="mb-3">
-      <label for="newPoint" class="form-label">Nowy punkt do zwiedzenia</label>
+    <div class="mb-3 position-relative">
       <input
-        v-model="newPoint"
+        v-model="searchQuery"
+        @input="fetchSuggestions"
+        @keydown.down.prevent="highlightNext"
+        @keydown.up.prevent="highlightPrev"
+        @keydown.enter.prevent="selectHighlighted"
         type="text"
-        id="newPoint"
         class="form-control"
-        placeholder="Wpisz nazwę miejsca, które chcesz odwiedzić"
-        @input="searchPlaces"
+        placeholder="Enter location name"
       />
-
-      <ul v-if="suggestions.length > 0" class="list-group">
+      <ul v-if="suggestions.length" class="list-group position-absolute w-100 z-3">
         <li
           v-for="(suggestion, index) in suggestions"
           :key="index"
-          class="list-group-item"
-          @click="selectPlace(suggestion)"
+          :class="['list-group-item', { active: index === highlightedIndex }]"
+          @click="selectSuggestion(suggestion)"
         >
           {{ suggestion.display_name }}
         </li>
       </ul>
-
-      <button class="btn btn-primary mt-2" @click="addPoint">Dodaj punkt</button>
     </div>
 
-    <div v-if="travelPoints.length" class="mb-3">
-      <h4>Punkty:</h4>
+    <div class="mb-3">
+      <select v-model="selectedCategory" class="form-select">
+        <option value="" disabled>Select Category</option>
+        <option value="Attraction">Attraction</option>
+        <option value="Accommodation">Accommodation</option>
+        <option value="Restaurant">Restaurant</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primary mb-4" @click="addPoint">Add Point</button>
+    
+    <div class="mb-3">
+      <h4>Your Added Points:</h4>
       <ul class="list-group">
-        <li v-for="(point, index) in travelPoints" :key="index" class="list-group-item">
-          {{ point.name }} ({{ point.lat.toFixed(4) }}, {{ point.lng.toFixed(4) }})
+        <li v-for="(point, index) in points" :key="index" class="list-group-item">
+          {{ point.name }} - {{ point.category }}
+          <button class="btn btn-danger btn-sm ml-2" @click="deletePoint(index)">Delete</button>
         </li>
       </ul>
     </div>
 
-    <div id="map" style="height: 400px;"></div>
+    <div id="map" style="height: 500px;"></div>
   </div>
 </template>
 
 <script>
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
-import axios from 'axios'
-import { debounce } from 'lodash'
-import { db } from '@/firebase'
+import L from "leaflet";
 
 export default {
-  name: 'TravelPoints',
-  props: ['trip'],
+  name: "TravelPoints",
+  props: {
+    defaultCountryCoords: {
+      type: Array,
+      default: () => [52.237049, 21.017532] // default to Warsaw
+    }
+  },
   data() {
     return {
-      travelPoints: [],
-      newPoint: '',
-      suggestions: [],
       map: null,
-      marker: null
-    }
-  },
-  methods: {
-    searchPlaces: debounce(async function() {
-      if (this.newPoint.trim().length > 2) {
-        try {
-          const response = await axios.get(`https://nominatim.openstreetmap.org/search`, {
-            params: {
-              q: this.newPoint,
-              format: 'json',
-              addressdetails: 1,
-              limit: 5
-            }
-          })
-          this.suggestions = response.data || []
-        } catch (error) {
-          console.error("Błąd podczas wyszukiwania miejsc:", error)
-        }
-      } else {
-        this.suggestions = []
-      }
-    }, 500),  
-
-    selectPlace(suggestion) {
-      this.newPoint = suggestion.display_name
-      this.suggestions = []
-      const lat = parseFloat(suggestion.lat)
-      const lng = parseFloat(suggestion.lon)
-      this.addMarker(lat, lng)
-    },
-
-    // Dodanie punktu
-    addPoint() {
-      if (this.newPoint.trim() && this.marker) {
-        const point = {
-          name: this.newPoint.trim(),
-          lat: this.marker.getLatLng().lat,
-          lng: this.marker.getLatLng().lng
-        }
-
-        this.travelPoints.push(point)
-        this.addMarker(point.lat, point.lng)
-
-        this.savePointToFirebase(point)
-
-        this.newPoint = ''
-      }
-    },
-
-    addMarker(lat, lng) {
-      if (!this.map) return
-
-      const pinIcon = L.icon({
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [0, -41]
-      })
-
-      if (this.marker) {
-        this.marker.setLatLng([lat, lng])
-      } else {
-        this.marker = L.marker([lat, lng], { icon: pinIcon }).addTo(this.map)
-      }
-
-      this.map.setView([lat, lng], 13)
-    },
-
-    async savePointToFirebase(point) {
-      const tripRef = db.collection('trips').doc(this.trip.id)
-      await tripRef.collection('points').add({
-        name: point.name,
-        lat: point.lat,
-        lng: point.lng
-      })
-    },
-
-    async fetchTravelPoints() {
-      const tripRef = db.collection('trips').doc(this.trip.id)
-      const snapshot = await tripRef.collection('points').get()
-      snapshot.forEach(doc => {
-        const point = doc.data()
-        this.travelPoints.push({
-          name: point.name,
-          lat: point.lat,
-          lng: point.lng
-        })
-        this.addMarker(point.lat, point.lng)
-      })
-    }
+      markerGroup: null,
+      searchQuery: "",
+      selectedCategory: "",
+      suggestions: [],
+      highlightedIndex: -1,
+      points: []
+    };
   },
   mounted() {
-    this.map = L.map('map').setView([52.2297, 21.0122], 13)
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    this.map = L.map("map").setView(this.defaultCountryCoords, 6);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(this.map)
+    }).addTo(this.map);
 
-    this.fetchTravelPoints()
+    this.markerGroup = L.layerGroup().addTo(this.map);
+  },
+  methods: {
+    async fetchSuggestions() {
+      if (this.searchQuery.length < 3) {
+        this.suggestions = [];
+        return;
+      }
+
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${this.searchQuery}&limit=5`);
+        this.suggestions = await response.json();
+        this.highlightedIndex = -1;
+      } catch (e) {
+        console.error("Error fetching suggestions:", e);
+      }
+    },
+    highlightNext() {
+      if (this.highlightedIndex < this.suggestions.length - 1) this.highlightedIndex++;
+    },
+    highlightPrev() {
+      if (this.highlightedIndex > 0) this.highlightedIndex--;
+    },
+    selectHighlighted() {
+      if (this.highlightedIndex >= 0) {
+        this.selectSuggestion(this.suggestions[this.highlightedIndex]);
+      }
+    },
+    selectSuggestion(suggestion) {
+      this.searchQuery = suggestion.display_name;
+      this.suggestions = [];
+    },
+    async addPoint() {
+      if (!this.searchQuery || !this.selectedCategory) {
+        alert("Please provide a location and category.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${this.searchQuery}`);
+        const data = await response.json();
+        if (!data.length) return alert("Location not found.");
+
+        const { lat, lon, display_name } = data[0];
+        const coords = [parseFloat(lat), parseFloat(lon)];
+
+        const marker = L.marker(coords, { draggable: true })
+          .addTo(this.markerGroup)
+          .bindPopup(`${display_name}<br><small>${this.selectedCategory}</small>`)
+          .openPopup();
+
+        marker.on("dragend", () => {
+          const newCoords = marker.getLatLng();
+          this.points[index].coords = [newCoords.lat, newCoords.lng];
+        });
+
+        const index = this.points.length;
+        this.points.push({
+          name: display_name,
+          coords,
+          category: this.selectedCategory,
+          marker
+        });
+
+        this.map.setView(coords, 13);
+
+        // Reset form after adding point
+        this.searchQuery = "";
+        this.selectedCategory = "";
+      } catch (e) {
+        alert("Error adding point.");
+      }
+    },
+    editPoint(index) {
+      const point = this.points[index];
+      this.searchQuery = point.name;
+      this.selectedCategory = point.category;
+      // Additional logic for editing can be added here
+    },
+    deletePoint(index) {
+      const point = this.points[index];
+      this.markerGroup.removeLayer(point.marker); // Remove marker from map
+      this.points.splice(index, 1); // Remove point from list
+    }
   }
-}
+};
 </script>
 
 <style scoped>
-#map {
-  margin-top: 1rem;
+.list-group-item {
+  cursor: pointer;
 }
-
-ul {
-  max-height: 200px;
-  overflow-y: auto;
-  position: absolute;
-  width: 100%;
-  z-index: 10;
-}
-
-.error {
-  color: red;
+.list-group-item.active {
+  background-color: #0d6efd;
+  color: white;
 }
 </style>
