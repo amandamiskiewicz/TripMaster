@@ -37,8 +37,9 @@
 
 <script>
 import { ref, onMounted } from 'vue';
-import { db } from '../firebase';
+import { db, auth } from '../firebase'; 
 import { collection, addDoc } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default {
   name: 'AddTripModal',
@@ -52,8 +53,16 @@ export default {
 
     const errorMessage = ref('');
     const countries = ref([]);
+    const userId = ref(null);
 
-    // api kraje
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        userId.value = user.uid;
+      } else {
+        errorMessage.value = 'Musisz być zalogowany, aby dodać podróż.';
+      }
+    });
+
     const fetchCountries = async () => {
       try {
         const response = await fetch('https://restcountries.com/v3.1/all');
@@ -64,24 +73,31 @@ export default {
       }
     };
 
-
     const submitForm = async () => {
+      if (!userId.value) {
+        errorMessage.value = 'Musisz być zalogowany, aby dodać podróż.';
+        return;
+      }
+
       try {
         const docRef = await addDoc(collection(db, 'trips'), {
           ...newTrip.value,
+          userId: userId.value,
           createdAt: new Date()
         });
+
         emit('add-trip', {
           id: docRef.id,
           ...newTrip.value,
+          userId: userId.value,
           createdAt: new Date()
         });
+
         closeModal();
       } catch (error) {
         errorMessage.value = 'Błąd zapisu do bazy: ' + error.message;
       }
     };
-
 
     const closeModal = () => {
       emit('close');

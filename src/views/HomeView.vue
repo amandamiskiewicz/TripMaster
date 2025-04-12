@@ -1,14 +1,6 @@
 <template>
   <div class="container py-5">
-
     <h1 class="text-center mb-4 display-4 fw-bold text-green">Trip Master</h1>
-
-    <div class="d-flex justify-content-center gap-3 mb-5 flex-wrap">
-      <router-link to="/trips" class="btn btn-green">Trips</router-link>
-      <router-link to="/diary" class="btn btn-green">Travel Diary</router-link>
-      <router-link to="/account" class="btn btn-green">Konto użytkownika</router-link>
-      <router-link to="/login" class="btn btn-green">Logowanie</router-link>
-    </div>
 
     <div v-if="trips.length === 0" class="text-center text-muted mt-5">
       <p class="fs-5">Nie masz jeszcze żadnych podróży 😢</p>
@@ -33,8 +25,8 @@
 
 <script>
 import { ref, onMounted } from 'vue';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase'; 
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db, auth } from '@/firebase'; 
 import TripCard from '@/components/TripCard.vue';
 import AddTripModal from '@/components/AddTripModal.vue';
 
@@ -44,10 +36,17 @@ export default {
   setup() {
     const trips = ref([]);
     const isModalVisible = ref(false);
+    const userId = ref(null);
 
     const loadTrips = async () => {
+      if (!userId.value) {
+        return; 
+      }
+      
       try {
-        const querySnapshot = await getDocs(collection(db, 'trips'));
+        const q = query(collection(db, 'trips'), where('userId', '==', userId.value));
+        const querySnapshot = await getDocs(q);
+
         trips.value = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
@@ -70,7 +69,17 @@ export default {
       isModalVisible.value = false;
     };
 
-    onMounted(loadTrips);
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        userId.value = user.uid; 
+        loadTrips(); 
+      } else {
+        userId.value = null; 
+        trips.value = []; 
+      }
+    });
+
+    onMounted(loadTrips); 
 
     return {
       trips,
@@ -84,7 +93,6 @@ export default {
 </script>
 
 <style scoped>
-
 .container {
   max-width: 1000px;
 }
@@ -100,7 +108,6 @@ export default {
 .text-muted {
   color: #6c757d;
 }
-
 
 .btn-green {
   background-color: #1e88e5 !important; 
