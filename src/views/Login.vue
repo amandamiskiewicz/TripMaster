@@ -1,5 +1,6 @@
 <template>
   <div class="login-page">
+    <router-link to="/" class="btn btn-outline-secondary mb-3">Back</router-link>
     <h1>Welcome to Trip Master!</h1>
 
     <div class="error" v-if="errorMessage">{{ errorMessage }}</div>

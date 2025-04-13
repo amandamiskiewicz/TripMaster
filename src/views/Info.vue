@@ -1,5 +1,6 @@
 <template>
   <div class="info-page">
+  <router-link to="/" class="btn btn-outline-secondary mb-3">Back</router-link>
     <div class="about-app">
       <h2>About App</h2>
       <p>

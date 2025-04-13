@@ -1,5 +1,6 @@
 <template>
   <div class="register">
+    <router-link to="/" class="btn btn-outline-secondary mb-3">Back</router-link>
     <h2>Create an Account</h2>
 
     <form @submit.prevent="registerUser">
