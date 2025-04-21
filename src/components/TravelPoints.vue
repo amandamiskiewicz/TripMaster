@@ -36,7 +36,7 @@
     </div>
 
     <button class="btn btn-primary mb-4" @click="addPoint">Add Point</button>
-    
+
     <div class="mb-3">
       <h4>Your Added Points:</h4>
       <ul class="list-group">
@@ -53,13 +53,15 @@
 
 <script>
 import L from "leaflet";
+import { db } from '../firebase';
+import { collection, addDoc, getDocs, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 
 export default {
   name: "TravelPoints",
   props: {
-    defaultCountryCoords: {
-      type: Array,
-      default: () => [52.237049, 21.017532] // default to Warsaw
+    tripId: {
+      type: String,
+      required: true
     }
   },
   data() {
@@ -70,18 +72,32 @@ export default {
       selectedCategory: "",
       suggestions: [],
       highlightedIndex: -1,
-      points: []
+      points: [],
+      unsubscribe: null,
+      errorMessage: ""
     };
   },
   mounted() {
-    this.map = L.map("map").setView(this.defaultCountryCoords, 6);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(this.map);
-
-    this.markerGroup = L.layerGroup().addTo(this.map);
+    this.initMap();
+    this.loadPoints();
+  },
+  beforeUnmount() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+    }
+    if (this.map) {
+      this.map.remove();
+    }
   },
   methods: {
+    initMap() {
+      this.map = L.map("map").setView([52.237049, 21.017532], 6);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(this.map);
+      this.markerGroup = L.layerGroup().addTo(this.map);
+    },
+
     async fetchSuggestions() {
       if (this.searchQuery.length < 3) {
         this.suggestions = [];
@@ -89,90 +105,151 @@ export default {
       }
 
       try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${this.searchQuery}&limit=5`);
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${this.searchQuery}&limit=5`
+        );
         this.suggestions = await response.json();
         this.highlightedIndex = -1;
       } catch (e) {
         console.error("Error fetching suggestions:", e);
+        this.errorMessage = "Failed to load suggestions";
       }
     },
+
     highlightNext() {
-      if (this.highlightedIndex < this.suggestions.length - 1) this.highlightedIndex++;
+      if (this.highlightedIndex < this.suggestions.length - 1) {
+        this.highlightedIndex++;
+      }
     },
+
     highlightPrev() {
-      if (this.highlightedIndex > 0) this.highlightedIndex--;
+      if (this.highlightedIndex > 0) {
+        this.highlightedIndex--;
+      }
     },
+
     selectHighlighted() {
       if (this.highlightedIndex >= 0) {
         this.selectSuggestion(this.suggestions[this.highlightedIndex]);
       }
     },
+
     selectSuggestion(suggestion) {
       this.searchQuery = suggestion.display_name;
       this.suggestions = [];
+      this.highlightedIndex = -1;
+      
+      if (suggestion.lat && suggestion.lon) {
+        const coords = [parseFloat(suggestion.lat), parseFloat(suggestion.lon)];
+        this.map.setView(coords, 13);
+      }
     },
+
     async addPoint() {
       if (!this.searchQuery || !this.selectedCategory) {
-        alert("Please provide a location and category.");
+        this.errorMessage = "Please provide a location and category.";
         return;
       }
 
       try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${this.searchQuery}`);
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${this.searchQuery}`
+        );
         const data = await response.json();
-        if (!data.length) return alert("Location not found.");
+
+        if (!data.length) {
+          this.errorMessage = "Location not found.";
+          return;
+        }
 
         const { lat, lon, display_name } = data[0];
         const coords = [parseFloat(lat), parseFloat(lon)];
 
-        const marker = L.marker(coords, { draggable: true })
-          .addTo(this.markerGroup)
-          .bindPopup(`${display_name}<br><small>${this.selectedCategory}</small>`)
-          .openPopup();
-
-        marker.on("dragend", () => {
-          const newCoords = marker.getLatLng();
-          this.points[index].coords = [newCoords.lat, newCoords.lng];
-        });
-
-        const index = this.points.length;
-        this.points.push({
+        const pointData = {
           name: display_name,
-          coords,
           category: this.selectedCategory,
-          marker
-        });
+          coords: coords,
+          createdAt: new Date()
+        };
 
-        this.map.setView(coords, 13);
-
-        // Reset form after adding point
+        await addDoc(collection(db, 'trips', this.tripId, 'points'), pointData);
+        
         this.searchQuery = "";
         this.selectedCategory = "";
+        this.errorMessage = "";
       } catch (e) {
-        alert("Error adding point.");
+        console.error("Error adding point:", e);
+        this.errorMessage = "Failed to add point: " + e.message;
       }
     },
-    editPoint(index) {
-      const point = this.points[index];
-      this.searchQuery = point.name;
-      this.selectedCategory = point.category;
-      // Additional logic for editing can be added here
+
+    loadPoints() {
+      this.unsubscribe = onSnapshot(
+        collection(db, 'trips', this.tripId, 'points'),
+        (snapshot) => {
+          this.markerGroup.clearLayers();
+          this.points = [];
+          
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            const marker = L.marker(data.coords, { draggable: true })
+              .addTo(this.markerGroup)
+              .bindPopup(`${data.name}<br><small>${data.category}</small>`);
+
+            this.points.push({
+              id: doc.id,
+              ...data,
+              marker
+            });
+          });
+        },
+        (error) => {
+          console.error("Error loading points:", error);
+          this.errorMessage = "Failed to load points";
+        }
+      );
     },
-    deletePoint(index) {
+
+    async deletePoint(index) {
       const point = this.points[index];
-      this.markerGroup.removeLayer(point.marker); // Remove marker from map
-      this.points.splice(index, 1); // Remove point from list
+      try {
+        await deleteDoc(doc(db, 'trips', this.tripId, 'points', point.id));
+        this.markerGroup.removeLayer(point.marker);
+        this.points.splice(index, 1);
+      } catch (e) {
+        console.error("Error deleting point:", e);
+        this.errorMessage = "Failed to delete point";
+      }
     }
   }
 };
 </script>
 
 <style scoped>
-.list-group-item {
-  cursor: pointer;
-}
 .list-group-item.active {
-  background-color: #0d6efd;
+  background-color: #007bff;
   color: white;
+}
+
+.error {
+  color: red;
+  margin-top: 10px;
+}
+
+.position-relative {
+  position: relative;
+}
+
+.position-absolute {
+  position: absolute;
+}
+
+.z-3 {
+  z-index: 3;
+}
+
+#map {
+  border-radius: 8px;
+  border: 1px solid #ddd;
 }
 </style>

@@ -16,7 +16,7 @@
     </div>
 
     <div v-if="isTravelPointsVisible">
-      <TravelPoints :trip="trip" @close="closeSection" />
+      <TravelPoints :tripId="trip?.id" @close="closeSection" />
     </div>
 
     <div v-if="isBudgetVisible">
@@ -38,14 +38,14 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
-import { db } from '../firebase'; 
-import { doc, getDoc } from 'firebase/firestore'; 
-import TravelPoints from '@/components/TravelPoints.vue'
-import Budget from '@/components/Budget.vue'
-import PackingList from '@/components/PackingList.vue'
-import Reservations from '@/components/Reservations.vue'
-import TravelDiary from '@/components/TravelDiary.vue'  // Importing new component
+import { ref, onMounted, watch } from 'vue';
+import { db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import TravelPoints from '@/components/TravelPoints.vue';
+import Budget from '@/components/Budget.vue';
+import PackingList from '@/components/PackingList.vue';
+import Reservations from '@/components/Reservations.vue';
+import TravelDiary from '@/components/TravelDiary.vue';
 
 export default {
   name: 'TripDetails',
@@ -54,24 +54,34 @@ export default {
     Budget,
     PackingList,
     Reservations,
-    TravelDiary  // Adding new component
+    TravelDiary
   },
-  props: ['id'], 
+  props: {
+    id: {
+      type: String,
+      required: true
+    }
+  },
   setup(props) {
-    const trip = ref(null); 
+    const trip = ref(null);
     const isTravelPointsVisible = ref(false);
     const isBudgetVisible = ref(false);
     const isPackingListVisible = ref(false);
     const isReservationsVisible = ref(false);
-    const isTravelDiaryVisible = ref(false);  // State for Travel Diary
+    const isTravelDiaryVisible = ref(false);
 
     const loadTrip = async () => {
       try {
-        const tripRef = doc(db, 'trips', props.id); 
-        const tripDoc = await getDoc(tripRef); 
+        console.log('Loading trip with ID:', props.id);
+        const tripRef = doc(db, 'trips', props.id);
+        const tripDoc = await getDoc(tripRef);
 
         if (tripDoc.exists()) {
-          trip.value = tripDoc.data(); 
+          trip.value = {
+            id: tripDoc.id,
+            ...tripDoc.data()
+          };
+          console.log('Trip loaded:', trip.value);
         } else {
           console.log('No trip found with this ID');
         }
@@ -80,8 +90,12 @@ export default {
       }
     };
 
-    onMounted(() => {
-      loadTrip();
+    onMounted(loadTrip);
+
+    watch(() => props.id, (newId) => {
+      if (newId) {
+        loadTrip();
+      }
     });
 
     const addTravelPoints = () => {
@@ -121,7 +135,7 @@ export default {
       isBudgetVisible.value = false;
       isPackingListVisible.value = false;
       isReservationsVisible.value = false;
-      isTravelDiaryVisible.value = true;  // Show Travel Diary
+      isTravelDiaryVisible.value = true;  
     };
 
     const closeSection = () => {
@@ -143,11 +157,11 @@ export default {
       planBudget,
       addPackingList,
       addReservations,
-      addTravelDiary,  // Adding method for Travel Diary
+      addTravelDiary,
       closeSection
     };
   }
-}
+};
 </script>
 
 <style scoped>
