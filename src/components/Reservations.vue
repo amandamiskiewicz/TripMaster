@@ -3,72 +3,47 @@
     <h3>Reservations - {{ trip.name }}</h3>
 
     <div class="mb-3">
-      <input 
-        v-model="newReservation.name" 
-        placeholder="Reservation name (e.g. Flight to Paris)" 
-        class="form-control mb-2" 
-        required
-      />
-      <input 
-        v-model="newReservation.link" 
-        placeholder="Reservation link (optional)" 
-        class="form-control mb-2" 
-        type="url"
-      />
-      <button 
-        class="btn btn-primary" 
-        @click="addReservation" 
-        :disabled="!newReservation.name.trim() || loading"
-      >
-        <span v-if="!loading">Add Reservation</span>
-        <span v-else class="spinner-border spinner-border-sm"></span>
+      <input v-model="newReservation.name" placeholder="Reservation name (e.g. Flight to Paris)" class="form-control mb-2" required />
+      <input v-model="newReservation.link" placeholder="Reservation link (optional)" class="form-control mb-2" type="url" />
+      <input type="file" @change="handleFileUpload" class="form-control mb-2" />
+      <button class="btn btn-primary" @click="addReservation" :disabled="!newReservation.name.trim()">
+        Add Reservation
       </button>
-      <p v-if="errorMessage" class="text-danger mt-2 mb-0">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="text-danger mt-2">{{ errorMessage }}</p>
     </div>
 
-    <div v-if="loading && !reservations.length" class="text-center my-4">
+    <div v-if="loading" class="text-center my-4">
       <div class="spinner-border" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
     </div>
 
     <div v-if="reservations.length">
-      <h4>Your Reservations</h4>
+      <h4>Reservations List</h4>
       <ul class="list-group">
         <li v-for="res in reservations" :key="res.id" class="list-group-item">
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <strong>{{ res.name }}</strong>
-              <div v-if="res.link" class="mt-1">
-                <a :href="res.link" target="_blank" class="text-decoration-none">
-                  Open Reservation Link
-                </a>
+              <div v-if="res.link">
+                <a :href="res.link" target="_blank" class="text-decoration-none">Open Link</a>
               </div>
-              <small class="text-muted d-block mt-1">
-                Added: {{ formatDate(res.createdAt) }}
-              </small>
+              <div v-if="res.fileUrl">
+                <a :href="res.fileUrl" target="_blank" class="text-decoration-none">View Attachment</a>
+              </div>
             </div>
-            <button 
-              class="btn btn-sm btn-danger" 
-              @click="deleteReservation(res.id)"
-              :disabled="loading"
-            >
-              Delete
-            </button>
+            <button class="btn btn-sm btn-danger" @click="deleteReservation(res.id)">Delete</button>
           </div>
         </li>
       </ul>
-    </div>
-
-    <div v-if="!loading && !reservations.length" class="alert alert-info mt-3">
-      No reservations added yet.
     </div>
   </div>
 </template>
 
 <script>
-import { db } from '../firebase';
+import { db, storage } from '../firebase';
 import { collection, addDoc, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default {
   name: 'Reservations',
@@ -77,7 +52,8 @@ export default {
     return {
       newReservation: {
         name: '',
-        link: ''
+        link: '',
+        file: null
       },
       reservations: [],
       loading: false,
@@ -98,10 +74,13 @@ export default {
         this.unsubscribe = onSnapshot(
           collection(db, 'trips', this.trip.id, 'reservations'),
           (snapshot) => {
-            this.reservations = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            })).sort((a, b) => b.createdAt - a.createdAt);
+            this.reservations = [];
+            snapshot.forEach((doc) => {
+              this.reservations.push({
+                id: doc.id,
+                ...doc.data()
+              });
+            });
             this.loading = false;
           },
           (error) => {
@@ -117,6 +96,10 @@ export default {
       }
     },
 
+    handleFileUpload(event) {
+      this.newReservation.file = event.target.files[0];
+    },
+
     async addReservation() {
       if (!this.newReservation.name.trim()) {
         this.errorMessage = "Please enter a reservation name";
@@ -127,40 +110,44 @@ export default {
       this.errorMessage = '';
 
       try {
+        // Upload file to Firebase Storage if exists
+        let fileUrl = '';
+        if (this.newReservation.file) {
+          const fileRef = storageRef(storage, `reservations/${this.trip.id}/${Date.now()}_${this.newReservation.file.name}`);
+          await uploadBytes(fileRef, this.newReservation.file);
+          fileUrl = await getDownloadURL(fileRef);
+        }
+
+        // Add to Firestore
         await addDoc(collection(db, 'trips', this.trip.id, 'reservations'), {
           name: this.newReservation.name.trim(),
           link: this.newReservation.link.trim() || null,
+          fileUrl: fileUrl || null,
           createdAt: new Date()
         });
 
         // Reset form
-        this.newReservation = { name: '', link: '' };
+        this.newReservation = { name: '', link: '', file: null };
       } catch (error) {
         console.error("Error adding reservation:", error);
-        this.errorMessage = "Failed to add reservation: " + error.message;
+        this.errorMessage = "Failed to add reservation";
       } finally {
         this.loading = false;
       }
     },
 
-    async deleteReservation(id) {
-      if (!confirm('Are you sure you want to delete this reservation?')) return;
-      
-      this.loading = true;
-      try {
-        await deleteDoc(doc(db, 'trips', this.trip.id, 'reservations', id));
-      } catch (error) {
-        console.error("Error deleting reservation:", error);
-        this.errorMessage = "Failed to delete reservation";
-      } finally {
-        this.loading = false;
+    async deleteReservation(reservationId) {
+      if (confirm('Are you sure you want to delete this reservation?')) {
+        this.loading = true;
+        try {
+          await deleteDoc(doc(db, 'trips', this.trip.id, 'reservations', reservationId));
+        } catch (error) {
+          console.error("Error deleting reservation:", error);
+          this.errorMessage = "Failed to delete reservation";
+        } finally {
+          this.loading = false;
+        }
       }
-    },
-
-    formatDate(timestamp) {
-      if (!timestamp) return '';
-      const date = timestamp.toDate();
-      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
     }
   }
 };
@@ -168,21 +155,13 @@ export default {
 
 <style scoped>
 .list-group-item {
-  transition: all 0.2s;
-}
-
-.list-group-item:hover {
-  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
 }
 
 .spinner-border {
-  width: 1rem;
-  height: 1rem;
-  vertical-align: middle;
-}
-
-.alert {
-  max-width: 600px;
-  margin: 0 auto;
+  width: 3rem;
+  height: 3rem;
 }
 </style>
