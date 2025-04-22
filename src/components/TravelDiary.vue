@@ -27,21 +27,58 @@
       ></textarea>
     </div>
 
-    <!-- Image upload -->
+    <!-- Image upload options -->
     <div class="mb-4">
-      <label for="diaryImage" class="form-label">Attach an Image (optional)</label>
+      <label class="form-label">Add Photo</label>
+      <div class="d-flex gap-3">
+        <!-- File upload -->
+        <button 
+          class="btn btn-outline-primary flex-grow-1"
+          @click="triggerFileInput"
+        >
+          <i class="bi bi-upload"></i> Upload Photo
+        </button>
+        
+        <!-- Camera capture -->
+        <button 
+          class="btn btn-outline-success flex-grow-1"
+          @click="startCamera"
+          :disabled="cameraActive"
+        >
+          <i class="bi bi-camera"></i> Take Photo
+        </button>
+      </div>
+      
+      <!-- Hidden file input -->
       <input 
+        ref="fileInput"
         type="file" 
         @change="handleImageUpload" 
-        class="form-control" 
+        class="d-none" 
         accept="image/*"
       />
     </div>
 
+    <!-- Camera preview -->
+    <div v-if="cameraActive" class="mb-4 camera-preview">
+      <video ref="cameraPreview" autoplay playsinline class="img-fluid rounded"></video>
+      <div class="d-flex justify-content-center mt-2">
+        <button class="btn btn-primary me-2" @click="capturePhoto">
+          <i class="bi bi-camera-fill"></i> Capture
+        </button>
+        <button class="btn btn-danger" @click="stopCamera">
+          <i class="bi bi-x-circle"></i> Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- Image preview -->
     <div v-if="imagePreview" class="mb-4">
       <h5>Image Preview:</h5>
       <img :src="imagePreview" alt="Diary Image Preview" class="img-fluid" style="max-height: 200px;" />
-      <button class="btn btn-sm btn-danger mt-2" @click="removeImage">Remove Image</button>
+      <button class="btn btn-sm btn-danger mt-2" @click="removeImage">
+        <i class="bi bi-trash"></i> Remove Image
+      </button>
     </div>
 
     <!-- Save and close buttons -->
@@ -145,6 +182,10 @@ export default {
     const loading = ref(false);
     const loadingEntries = ref(false);
     const errorMessage = ref('');
+    const cameraActive = ref(false);
+    const cameraPreview = ref(null);
+    const fileInput = ref(null);
+    const cameraStream = ref(null);
 
     // Load diary entries from Firestore
     const loadDiaryEntries = () => {
@@ -167,6 +208,12 @@ export default {
       });
     };
 
+    // Trigger file input click
+    const triggerFileInput = () => {
+      if (cameraActive.value) stopCamera();
+      fileInput.value.click();
+    };
+
     // Handle image upload
     const handleImageUpload = (event) => {
       const file = event.target.files[0];
@@ -182,6 +229,50 @@ export default {
         };
         reader.readAsDataURL(file);
       }
+    };
+
+    // Start camera
+    const startCamera = async () => {
+      try {
+        cameraActive.value = true;
+        cameraStream.value = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' },
+          audio: false
+        });
+        if (cameraPreview.value) {
+          cameraPreview.value.srcObject = cameraStream.value;
+        }
+      } catch (error) {
+        console.error("Error accessing camera:", error);
+        errorMessage.value = "Could not access camera. Please check permissions.";
+        cameraActive.value = false;
+      }
+    };
+
+    // Stop camera
+    const stopCamera = () => {
+      if (cameraStream.value) {
+        cameraStream.value.getTracks().forEach(track => track.stop());
+        cameraStream.value = null;
+      }
+      cameraActive.value = false;
+    };
+
+    // Capture photo from camera
+    const capturePhoto = () => {
+      if (!cameraPreview.value) return;
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = cameraPreview.value.videoWidth;
+      canvas.height = cameraPreview.value.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(cameraPreview.value, 0, 0, canvas.width, canvas.height);
+      
+      canvas.toBlob((blob) => {
+        imageFile.value = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+        imagePreview.value = canvas.toDataURL('image/jpeg');
+        stopCamera();
+      }, 'image/jpeg', 0.9);
     };
 
     // Remove selected image
@@ -263,6 +354,7 @@ export default {
       imageFile.value = null;
       imagePreview.value = null;
       errorMessage.value = '';
+      if (cameraActive.value) stopCamera();
     };
 
     // Format date
@@ -287,6 +379,7 @@ export default {
     // Cleanup on unmount
     onUnmounted(() => {
       if (unsubscribe) unsubscribe();
+      if (cameraActive.value) stopCamera();
     });
 
     // Filter entries by search query
@@ -306,13 +399,20 @@ export default {
       loading,
       loadingEntries,
       errorMessage,
+      cameraActive,
+      cameraPreview,
+      fileInput,
       saveDiaryEntry,
       resetForm,
       handleImageUpload,
       removeImage,
       deleteEntry,
       filteredDiaryEntries,
-      formatDate
+      formatDate,
+      triggerFileInput,
+      startCamera,
+      stopCamera,
+      capturePhoto
     };
   }
 };
@@ -365,5 +465,22 @@ export default {
   max-height: 200px;
   object-fit: contain;
   border-radius: 4px;
+}
+
+.camera-preview {
+  position: relative;
+  background-color: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.camera-preview video {
+  width: 100%;
+  max-height: 300px;
+  display: block;
+}
+
+.bi {
+  margin-right: 5px;
 }
 </style>
