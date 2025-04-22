@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script>
+      const pathSegments = window.location.pathname.split('/');
+      const basePath = pathSegments[1] ? `/${pathSegments[1]}/` : '/';
+      window.location.replace(basePath + window.location.hash);
+    </script>
+  </head>
+  <body>
+    Redirecting...
+  </body>
+</html>
