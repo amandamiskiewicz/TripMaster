@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router' 
 import Home from '@/views/Home.vue'
 import HomeView from '@/views/HomeView.vue'
 import TripDetails from '@/views/TripDetails.vue'
@@ -8,19 +8,44 @@ import Info from '@/views/Info.vue'
 import { getAuth } from 'firebase/auth'
 
 const routes = [
-  { path: '/', name: 'Home', component: Home },
+  { 
+    path: '/', 
+    name: 'Home', 
+    component: Home,
+    meta: { transition: 'fade' } 
+  },
   { path: '/info', name: 'Info', component: Info },
   { path: '/login', name: 'Login', component: Login },
   { path: '/register', name: "Register", component: Register },
+  { 
+    path: '/home', 
+    name: 'HomeView', 
+    component: HomeView, 
+    meta: { requiresAuth: true } 
+  },
+  { 
+    path: '/trips', 
+    name: 'Trips', 
+    component: HomeView, 
+    meta: { requiresAuth: true } 
+  },
+  { 
+    path: '/trip/:id', 
+    name: 'TripDetails', 
+    component: TripDetails, 
+    props: true, 
+    meta: { requiresAuth: true } 
+  },
 
-  { path: '/home', name: 'HomeView', component: HomeView, meta: { requiresAuth: true } },
-  { path: '/trips', name: 'Trips', component: HomeView, meta: { requiresAuth: true } },
-  { path: '/trip/:id', name: 'TripDetails', component: TripDetails, props: true, meta: { requiresAuth: true } }
+  { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
-  routes
+  history: createWebHashHistory('/TripMaster/'), 
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    return savedPosition || { top: 0 }
+  }
 })
 
 router.beforeEach((to, from, next) => {
