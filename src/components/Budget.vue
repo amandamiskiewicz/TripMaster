@@ -28,7 +28,7 @@
         <div class="card text-white bg-info mb-3">
           <div class="card-body">
             <h5 class="card-title">Total Budget</h5>
-            <input v-model.number="totalBudget" type="number" class="form-control" /> PLN
+            <input v-model.number="totalBudget" type="number" class="form-control" @change="updateBudget" /> PLN
           </div>
         </div>
       </div>
@@ -42,6 +42,7 @@
           v-model="newExpense.name"
           placeholder="Expense Name (required)"
           class="form-control"
+          required
         />
       </div>
       <div class="mb-2">
@@ -50,6 +51,9 @@
           placeholder="Expense Amount (PLN, required)"
           type="number"
           class="form-control"
+          required
+          min="0"
+          step="0.01"
         />
       </div>
       <div class="mb-2">
@@ -58,6 +62,7 @@
           placeholder="Number of persons to split (optional)"
           type="number"
           class="form-control"
+          min="0"
         />
         <small class="text-muted" v-if="newExpense.persons > 0">
           Even split: {{ (newExpense.amount / newExpense.persons).toFixed(2) }} PLN per person
@@ -87,13 +92,14 @@
         <small class="text-muted">Attach photo/file (optional)</small>
       </div>
       <button class="btn btn-primary" @click="addExpense">Add Expense</button>
+      <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     </div>
 
     <!-- Expense List -->
     <div v-if="expenses.length">
       <h4>Expenses</h4>
       <ul class="list-group">
-        <li v-for="(exp, idx) in expenses" :key="idx" class="list-group-item">
+        <li v-for="(exp, idx) in expenses" :key="exp.id" class="list-group-item">
           <div class="d-flex justify-content-between align-items-center flex-wrap">
             <div>
               <strong>{{ exp.name }}</strong> - {{ exp.amount }} PLN
@@ -109,9 +115,10 @@
               </div>
             </div>
             <div class="form-check">
-              <input type="checkbox" v-model="exp.paid" class="form-check-input" :id="'paid-' + idx" />
+              <input type="checkbox" v-model="exp.paid" class="form-check-input" :id="'paid-' + idx" @change="updateExpense(exp)" />
               <label :for="'paid-' + idx" class="form-check-label">Paid</label>
             </div>
+            <button class="btn btn-danger btn-sm" @click="deleteExpense(exp.id)">Delete</button>
           </div>
         </li>
       </ul>
@@ -120,22 +127,28 @@
 </template>
 
 <script>
+import { db } from '../firebase';
+import { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+
 export default {
   name: 'BudgetPlanner',
   props: ['trip'],
   data() {
     return {
-      totalBudget: 0,  // Budget editing capability
+      totalBudget: 0,
       expenses: [],
       newExpense: {
         name: '',
-        amount: '',
-        persons: '', // Optional number of persons to split the amount
+        amount: 0,
+        persons: 0,
         description: '',
         date: '',
         file: null,
         paid: false
-      }
+      },
+      errorMessage: '',
+      unsubscribeBudget: null,
+      unsubscribeExpenses: null
     };
   },
   computed: {
@@ -147,18 +160,87 @@ export default {
       return remaining.toFixed(2);
     }
   },
+  created() {
+    this.loadBudget();
+    this.loadExpenses();
+  },
+  beforeUnmount() {
+    if (this.unsubscribeBudget) this.unsubscribeBudget();
+    if (this.unsubscribeExpenses) this.unsubscribeExpenses();
+  },
   methods: {
+    async loadBudget() {
+      this.unsubscribeBudget = onSnapshot(
+        doc(db, 'trips', this.trip.id),
+        (doc) => {
+          if (doc.exists()) {
+            const data = doc.data();
+            this.totalBudget = data.budget || 0;
+          }
+        },
+        (error) => {
+          console.error("Error loading budget:", error);
+          this.errorMessage = "Failed to load budget";
+        }
+      );
+    },
+    
+    async updateBudget() {
+      try {
+        await updateDoc(doc(db, 'trips', this.trip.id), {
+          budget: this.totalBudget
+        });
+      } catch (error) {
+        console.error("Error updating budget:", error);
+        this.errorMessage = "Failed to update budget";
+      }
+    },
+
+    loadExpenses() {
+      this.unsubscribeExpenses = onSnapshot(
+        collection(db, 'trips', this.trip.id, 'expenses'),
+        (snapshot) => {
+          this.expenses = [];
+          snapshot.forEach((doc) => {
+            this.expenses.push({
+              id: doc.id,
+              ...doc.data()
+            });
+          });
+        },
+        (error) => {
+          console.error("Error loading expenses:", error);
+          this.errorMessage = "Failed to load expenses";
+        }
+      );
+    },
+
     handleFileUpload(e) {
       const file = e.target.files[0];
       if (file) {
         this.newExpense.file = URL.createObjectURL(file);
       }
     },
-    addExpense() {
-      // Check if required fields are filled
-      if (this.newExpense.name.trim() && this.newExpense.amount > 0) {
-        this.expenses.push({ ...this.newExpense });
-        // Reset the expense form
+
+    async addExpense() {
+      if (!this.newExpense.name.trim() || this.newExpense.amount <= 0) {
+        this.errorMessage = 'Please enter the expense name and an amount greater than 0!';
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, 'trips', this.trip.id, 'expenses'), {
+          name: this.newExpense.name,
+          amount: Number(this.newExpense.amount),
+          persons: Number(this.newExpense.persons) || 0,
+          description: this.newExpense.description || '',
+          date: this.newExpense.date || '',
+          file: this.newExpense.file || null,
+          paid: false,
+          createdAt: new Date()
+        });
+
+        // Reset form
         this.newExpense = {
           name: '',
           amount: 0,
@@ -168,8 +250,30 @@ export default {
           file: null,
           paid: false
         };
-      } else {
-        alert('Please enter the expense name and an amount greater than 0!');
+        this.errorMessage = '';
+      } catch (error) {
+        console.error("Error adding expense:", error);
+        this.errorMessage = "Failed to add expense";
+      }
+    },
+
+    async updateExpense(expense) {
+      try {
+        await updateDoc(doc(db, 'trips', this.trip.id, 'expenses', expense.id), {
+          paid: expense.paid
+        });
+      } catch (error) {
+        console.error("Error updating expense:", error);
+        this.errorMessage = "Failed to update expense";
+      }
+    },
+
+    async deleteExpense(expenseId) {
+      try {
+        await deleteDoc(doc(db, 'trips', this.trip.id, 'expenses', expenseId));
+      } catch (error) {
+        console.error("Error deleting expense:", error);
+        this.errorMessage = "Failed to delete expense";
       }
     }
   }
@@ -185,5 +289,9 @@ export default {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+}
+.error {
+  color: red;
+  margin-top: 10px;
 }
 </style>
