@@ -148,7 +148,8 @@ export default {
       },
       errorMessage: '',
       unsubscribeBudget: null,
-      unsubscribeExpenses: null
+      unsubscribeExpenses: null,
+      budgetExceeded: false
     };
   },
   computed: {
@@ -158,9 +159,21 @@ export default {
     remainingBudget() {
       const remaining = this.totalBudget - this.totalSpent;
       return remaining.toFixed(2);
+    },
+    isBudgetExceeded() {
+      return this.totalSpent > this.totalBudget;
+    }
+  },
+  watch: {
+    isBudgetExceeded(newVal) {
+      if (newVal && !this.budgetExceeded) {
+        this.showSOS();
+      }
+      this.budgetExceeded = newVal;
     }
   },
   created() {
+    this.registerServiceWorker();
     this.loadBudget();
     this.loadExpenses();
   },
@@ -169,6 +182,29 @@ export default {
     if (this.unsubscribeExpenses) this.unsubscribeExpenses();
   },
   methods: {
+    registerServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+        .then(function(registration) {
+          console.log('Service Worker registered with scope:', registration.scope);
+        }).catch(function(error) {
+          console.error('Service Worker registration failed:', error);
+        });
+      }
+    },
+    
+    showSOS() {
+      console.log("showSOS triggered!");
+      if ("vibrate" in navigator) {
+        console.log("Vibration supported! Sending SOS pattern...");
+        navigator.vibrate([300, 50, 300, 50, 300, 50, 600, 50, 600, 50, 600, 50, 300, 50, 300, 50, 300]);
+        alert("Przekroczono budżet! Wibracje zostały wysłane!");
+      } else {
+        console.warn("Vibration API not supported on this device.");
+        alert("Przekroczono budżet! Twoje urządzenie nie obsługuje wibracji.");
+      }
+    },
+
     async loadBudget() {
       this.unsubscribeBudget = onSnapshot(
         doc(db, 'trips', this.trip.id),
