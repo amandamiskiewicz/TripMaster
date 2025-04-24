@@ -1,27 +1,35 @@
 <template>
-  <div class="container py-5">
-    <button class="btn btn-danger" @click="logout">
-      Log out
-    </button>
-    <h1 class="text-center mb-4 display-4 fw-bold text-green">Trip Master</h1>
+  <div class="container-fluid py-4 py-md-5 px-3 px-md-5">
+    <div class="d-flex justify-content-end mb-4">
+      <button class="btn btn-outline-danger" @click="logout">
+        Log out
+      </button>
+    </div>
+
+    <h1 class="text-center mb-4 display-4 fw-bold text-success">Trip Master</h1>
 
     <div v-if="trips.length === 0" class="text-center text-muted mt-5">
       <p class="fs-5">You don't have any trips yet 😢</p>
-      <button class="btn btn-green" @click="showAddTripModal">Add your first trip</button>
+      <button class="btn btn-success px-4 py-2" @click="showAddTripModal">Add your first trip</button>
     </div>
 
-    <div v-else class="row">
-      <TripCard
-        v-for="trip in trips"
-        :key="trip.id"
-        :trip="trip"
-        @delete-trip="deleteTrip"
-      />
+    <div v-else class="row g-3 g-md-4 justify-content-center">
+      <div class="col-12 col-sm-6 col-lg-4 col-xl-3" v-for="trip in trips" :key="trip.id">
+        <TripCard
+          :trip="trip"
+          @delete-trip="deleteTrip"
+          class="h-100"
+        />
+      </div>
     </div>
     
-
-    <div v-if="trips.length > 0" class="d-flex justify-content-center mt-4">
-      <button class="btn btn-green" @click="showAddTripModal">Add new trip</button>
+    <div class="d-flex justify-content-center mt-4">
+      <button 
+        class="btn btn-success px-4 py-2" 
+        @click="showAddTripModal"
+      >
+        {{ trips.length > 0 ? 'Add new trip' : 'Add your first trip' }}
+      </button>
     </div>
 
     <AddTripModal v-if="isModalVisible" @close="closeModal" @add-trip="addTrip" />
@@ -36,6 +44,7 @@ import TripCard from '@/components/TripCard.vue';
 import AddTripModal from '@/components/AddTripModal.vue';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'vue-router';
+
 export default {
   name: 'HomeView',
   components: { TripCard, AddTripModal },
@@ -46,14 +55,11 @@ export default {
     const router = useRouter();
 
     const loadTrips = async () => {
-      if (!userId.value) {
-        return; 
-      }
+      if (!userId.value) return;
       
       try {
         const q = query(collection(db, 'trips'), where('userId', '==', userId.value));
         const querySnapshot = await getDocs(q);
-
         trips.value = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
@@ -65,35 +71,26 @@ export default {
 
     const deleteTrip = async (tripId) => {
       try {
-        // Usunięcie z bazy danych
-        const tripDocRef = doc(db, 'trips', tripId);
-        await deleteDoc(tripDocRef);
-
-        // Usunięcie z lokalnego stanu (widoku)
+        await deleteDoc(doc(db, 'trips', tripId));
         trips.value = trips.value.filter(trip => trip.id !== tripId);
       } catch (error) {
         console.error('Error deleting trip:', error);
       }
     };
 
-
-
     const addTrip = (newTrip) => {
       trips.value.push(newTrip);
-      closeModal(); 
+      closeModal();
     };
 
     const logout = async () => {
       try {
-        await signOut(auth); // Wylogowanie z Firebase
-        console.log('User logged out');
-        router.push('/'); // Przekierowanie na stronę startową
+        await signOut(auth);
+        router.push('/');
       } catch (error) {
         console.error('Error logging out:', error);
       }
     };
-
-
 
     const showAddTripModal = () => {
       isModalVisible.value = true;
@@ -105,15 +102,15 @@ export default {
 
     auth.onAuthStateChanged((user) => {
       if (user) {
-        userId.value = user.uid; 
-        loadTrips(); 
+        userId.value = user.uid;
+        loadTrips();
       } else {
-        userId.value = null; 
-        trips.value = []; 
+        userId.value = null;
+        trips.value = [];
       }
     });
 
-    onMounted(loadTrips); 
+    onMounted(loadTrips);
 
     return {
       trips,
@@ -129,34 +126,27 @@ export default {
 </script>
 
 <style scoped>
-.container {
-  max-width: 1000px;
+.container-fluid {
+  max-width: 1800px;
 }
 
-.text-center {
-  text-align: center;
+.btn-success {
+  background-color: #42b883;
+  border-color: #42b883;
+  min-width: 200px;
 }
 
-.fs-5 {
-  font-size: 1.25rem;
+.btn-success:hover {
+  background-color: #358d73;
+  border-color: #358d73;
 }
 
-.text-muted {
-  color: #6c757d;
+.btn-outline-danger {
+  color: #dc3545;
+  border-color: #dc3545;
 }
 
-.btn-green {
-  background-color: #1e88e5 !important; 
-  color: white !important;
-  border: 1px solid #1e88e5 !important;
-}
-
-.btn-green:hover {
-  background-color: #388e73 !important;
-  border: 1px solid #388e73 !important;
-}
-
-.text-green {
-  color: #42b883 !important;
+.btn-outline-danger:hover {
+  background-color: rgba(220, 53, 69, 0.1);
 }
 </style>

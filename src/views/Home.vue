@@ -1,21 +1,21 @@
 <template>
-  <div class="home-page d-flex flex-column justify-content-center align-items-center min-vh-100">
+  <div class="home-page d-flex flex-column justify-content-center align-items-center min-vh-100 p-3 p-md-5">
     <div class="logo-container text-center mb-4">
-      <img src="/icons/icon-192x192.png" alt="TripMaster Logo" class="app-logo" />
+      <img src="/icons/icon-192x192.png" alt="TripMaster Logo" class="app-logo img-fluid" />
     </div>
 
-    <div class="welcome-text text-center my-2">
-      <h1>TripMaster</h1>
-      <p class="slogan">Start your adventure today and make every journey unforgettable!</p>
+    <div class="welcome-text text-center my-4">
+      <h1 class="display-4 display-md-3 text-success">TripMaster</h1>
+      <p class="slogan lead text-muted">Start your adventure today and make every journey unforgettable!</p>
     </div>
 
-    <div class="auth-buttons">
-      <button @click="goToLogin">Login</button>
-      <button @click="goToRegister">Register</button>
+    <div class="auth-buttons d-flex flex-wrap justify-content-center gap-3 mb-4">
+      <button @click="goToLogin" class="btn btn-success px-4 py-2">Login</button>
+      <button @click="goToRegister" class="btn btn-success px-4 py-2">Register</button>
     </div>
 
     <div class="info-button">
-      <button @click="goToInfo">Find out more about the app and authors</button>
+      <button @click="goToInfo" class="btn btn-outline-success px-4 py-2">Find out more about the app</button>
     </div>
   </div>
 </template>
@@ -25,7 +25,6 @@ import { useRouter } from 'vue-router';
 
 export default {
   name: 'Home',
-
   setup() {
     const router = useRouter(); 
 
@@ -52,60 +51,32 @@ export default {
 
 <style scoped>
 .home-page {
-  text-align: center;
-  padding: 40px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  background-color: #f8f9fa;
 }
 
 .app-logo {
-  width: 150px;
-  height: 150px;
-  margin-bottom: 20px;
+  max-width: 150px;
+  height: auto;
+  margin-bottom: 1.5rem;
 }
 
-.welcome-text {
-  margin-bottom: 40px;
-}
-
-h1 {
-  font-size: 3em;
-  color: #42b883;
-}
-
-.slogan {
-  font-size: 1.5em;
-  font-weight: 300;
-  color: #666;
-}
-
-.auth-buttons button {
-  margin: 10px;
-  padding: 10px 20px;
-  font-size: 16px;
+.btn-success {
   background-color: #42b883;
-  color: white;
-  border: none;
-  cursor: pointer;
+  border-color: #42b883;
+  min-width: 120px;
 }
 
-.auth-buttons button:hover {
+.btn-success:hover {
   background-color: #358d73;
+  border-color: #358d73;
 }
 
-.info-button button {
-  margin-top: 30px;
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #f1f1f1;
+.btn-outline-success {
   color: #42b883;
-  border: 1px solid #42b883;
-  cursor: pointer;
+  border-color: #42b883;
 }
 
-.info-button button:hover {
-  background-color: #e1e1e1;
+.btn-outline-success:hover {
+  background-color: rgba(66, 184, 131, 0.1);
 }
 </style>
