@@ -1,152 +1,129 @@
 <template>
-  <div class="travel-diary">
-    <h3>Travel Diary - {{ trip.name }}</h3>
-    
-    <!-- Title and content fields -->
-    <div class="mb-4">
-      <label for="diaryTitle" class="form-label">Title</label>
-      <input 
-        v-model="diaryTitle" 
-        type="text" 
-        id="diaryTitle" 
-        class="form-control" 
-        placeholder="Enter the title" 
-        required
-      />
-    </div>
-    
-    <div class="mb-4">
-      <label for="diaryContent" class="form-label">Content</label>
-      <textarea 
-        v-model="diaryContent" 
-        id="diaryContent" 
-        class="form-control" 
-        rows="4" 
-        placeholder="Write your thoughts..."
-        required
-      ></textarea>
-    </div>
-
-    <!-- Image upload options -->
-    <div class="mb-4">
-      <label class="form-label">Add Photo</label>
-      <div class="d-flex gap-3">
-        <!-- File upload -->
-        <button 
-          class="btn btn-outline-primary flex-grow-1"
-          @click="triggerFileInput"
-        >
-          <i class="bi bi-upload"></i> Upload Photo
-        </button>
-        
-        <!-- Camera capture -->
-        <button 
-          class="btn btn-outline-success flex-grow-1"
-          @click="startCamera"
-          :disabled="cameraActive"
-        >
-          <i class="bi bi-camera"></i> Take Photo
-        </button>
-      </div>
-      
-      <!-- Hidden file input -->
-      <input 
-        ref="fileInput"
-        type="file" 
-        @change="handleImageUpload" 
-        class="d-none" 
-        accept="image/*"
-      />
-    </div>
-
-    <!-- Camera preview -->
-    <div v-if="cameraActive" class="mb-4 camera-preview">
-      <video ref="cameraPreview" autoplay playsinline class="img-fluid rounded"></video>
-      <div class="d-flex justify-content-center mt-2">
-        <button class="btn btn-primary me-2" @click="capturePhoto">
-          <i class="bi bi-camera-fill"></i> Capture
-        </button>
-        <button class="btn btn-danger" @click="stopCamera">
-          <i class="bi bi-x-circle"></i> Cancel
-        </button>
-      </div>
-    </div>
-
-    <!-- Image preview -->
-    <div v-if="imagePreview" class="mb-4">
-      <h5>Image Preview:</h5>
-      <img :src="imagePreview" alt="Diary Image Preview" class="img-fluid" style="max-height: 200px;" />
-      <button class="btn btn-sm btn-danger mt-2" @click="removeImage">
-        <i class="bi bi-trash"></i> Remove Image
+  <div class="travel-diary-container">
+    <div class="header">
+      <h2>Travel Diary - {{ trip.name }}</h2>
+      <button @click="$emit('close')" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back
       </button>
     </div>
 
-    <!-- Save and close buttons -->
-    <div class="d-flex gap-3 mb-4">
-      <button 
-        class="btn btn-primary" 
-        @click="saveDiaryEntry" 
-        :disabled="!diaryTitle.trim() || !diaryContent.trim() || loading"
-      >
-        <span v-if="!loading">Save</span>
-        <span v-else class="spinner-border spinner-border-sm"></span>
-      </button>
-      <button class="btn btn-secondary" @click="resetForm">Clear</button>
+    <div class="entry-form">
+      <h3>New Entry</h3>
+      <div class="form-group">
+        <input 
+          v-model="diaryTitle" 
+          placeholder="Entry title" 
+          class="form-input"
+          required
+        />
+      </div>
+      <div class="form-group">
+        <textarea 
+          v-model="diaryContent" 
+          placeholder="Write your thoughts..." 
+          class="form-textarea"
+          rows="5"
+          required
+        ></textarea>
+      </div>
+
+      <div class="image-upload">
+        <div class="upload-options">
+          <button @click="triggerFileInput" class="upload-btn">
+            <i class="fas fa-upload"></i> Upload Photo
+          </button>
+          <button 
+            @click="toggleCamera" 
+            class="upload-btn"
+            :class="{ active: cameraActive }"
+          >
+            <i class="fas fa-camera"></i> {{ cameraActive ? 'Cancel' : 'Take Photo' }}
+          </button>
+        </div>
+        <input 
+          ref="fileInput"
+          type="file" 
+          @change="handleImageUpload" 
+          class="d-none" 
+          accept="image/*"
+        />
+      </div>
+
+      <div v-if="cameraActive" class="camera-preview">
+        <video ref="cameraPreview" autoplay playsinline></video>
+        <button @click="capturePhoto" class="capture-btn">
+          <i class="fas fa-camera"></i> Capture
+        </button>
+      </div>
+
+      <div v-if="imagePreview" class="image-preview">
+        <img :src="imagePreview" alt="Preview" class="preview-image" />
+        <button @click="removeImage" class="remove-image-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="form-actions">
+        <button 
+          @click="saveDiaryEntry" 
+          class="submit-btn"
+          :disabled="!diaryTitle.trim() || !diaryContent.trim() || loading"
+        >
+          <span v-if="!loading">Save Entry</span>
+          <span v-else class="spinner"></span>
+        </button>
+        <button @click="resetForm" class="cancel-btn">
+          Clear
+        </button>
+      </div>
     </div>
 
-    <!-- Search field for diary entries -->
-    <div class="my-4">
+    <div class="search-box">
       <input 
         v-model="searchQuery" 
-        type="text" 
-        class="form-control" 
-        placeholder="Search entries by title..." 
+        placeholder="Search entries..." 
+        class="search-input"
       />
+      <i class="fas fa-search search-icon"></i>
     </div>
 
-    <!-- Loading indicator -->
-    <div v-if="loadingEntries" class="text-center my-4">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
+    <div v-if="loadingEntries" class="loading-indicator">
+      <div class="spinner"></div>
+    </div>
+
+    <div v-if="!loadingEntries && filteredDiaryEntries.length" class="entries-list">
+      <h3>Your Entries</h3>
+      <div 
+        v-for="entry in filteredDiaryEntries" 
+        :key="entry.id" 
+        class="entry-card"
+      >
+        <div class="entry-content">
+          <h4>{{ entry.title }}</h4>
+          <div class="entry-date">{{ formatDate(entry.createdAt) }}</div>
+          <p class="entry-text">{{ entry.content }}</p>
+          <div v-if="entry.imageUrl" class="entry-image">
+            <img :src="entry.imageUrl" alt="Entry image" />
+          </div>
+        </div>
+        <button 
+          @click="deleteEntry(entry.id, entry.imageUrl)" 
+          class="delete-btn"
+          :disabled="loading"
+        >
+          <i class="fas fa-trash"></i>
+        </button>
       </div>
     </div>
 
-    <!-- List of diary entries -->
-    <div v-if="filteredDiaryEntries.length" class="mt-5">
-      <h4>Your Diary Entries</h4>
-      <ul class="list-group">
-        <li v-for="entry in filteredDiaryEntries" :key="entry.id" class="list-group-item mb-3">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <h5>{{ entry.title }}</h5>
-              <p class="text-muted mb-2">
-                {{ formatDate(entry.createdAt) }}
-              </p>
-              <p class="mb-2">{{ entry.content }}</p>
-              <div v-if="entry.imageUrl" class="mb-2">
-                <img :src="entry.imageUrl" alt="Entry Image" class="img-fluid rounded" style="max-height: 200px;" />
-              </div>
-            </div>
-            <button 
-              class="btn btn-sm btn-danger"
-              @click="deleteEntry(entry.id, entry.imageUrl)"
-              :disabled="loading"
-            >
-              Delete
-            </button>
-          </div>
-        </li>
-      </ul>
-    </div>
-
-    <div v-if="!loadingEntries && !filteredDiaryEntries.length" class="alert alert-info mt-4">
-      No diary entries found. Start by adding your first entry!
+    <div v-if="!loadingEntries && !filteredDiaryEntries.length" class="empty-state">
+      <i class="fas fa-book-open empty-icon"></i>
+      <p>No diary entries yet</p>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { db, storage } from '../firebase';
 import { 
   collection, 
@@ -166,321 +143,560 @@ import {
 
 export default {
   name: 'TravelDiary',
-  props: {
-    trip: {
-      type: Object,
-      required: true
+  props: ['trip'],
+  data() {
+    return {
+      diaryTitle: '',
+      diaryContent: '',
+      diaryEntries: [],
+      imageFile: null,
+      imagePreview: null,
+      searchQuery: '',
+      loading: false,
+      loadingEntries: false,
+      errorMessage: '',
+      cameraActive: false,
+      cameraPreview: null,
+      fileInput: null,
+      cameraStream: null,
+      unsubscribe: null
+    };
+  },
+  created() {
+    this.loadDiaryEntries();
+  },
+  beforeUnmount() {
+    if (this.unsubscribe) this.unsubscribe();
+    if (this.cameraActive) this.stopCamera();
+  },
+  computed: {
+    filteredDiaryEntries() {
+      return this.diaryEntries.filter(entry => 
+        entry.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+        entry.content.toLowerCase().includes(this.searchQuery.toLowerCase())
+      );
     }
   },
-  setup(props) {
-    const diaryTitle = ref('');
-    const diaryContent = ref('');
-    const diaryEntries = ref([]);
-    const imageFile = ref(null);
-    const imagePreview = ref(null);
-    const searchQuery = ref('');
-    const loading = ref(false);
-    const loadingEntries = ref(false);
-    const errorMessage = ref('');
-    const cameraActive = ref(false);
-    const cameraPreview = ref(null);
-    const fileInput = ref(null);
-    const cameraStream = ref(null);
-
-    // Load diary entries from Firestore
-    const loadDiaryEntries = () => {
-      loadingEntries.value = true;
+  methods: {
+    async loadDiaryEntries() {
+      this.loadingEntries = true;
       const q = query(
-        collection(db, 'trips', props.trip.id, 'diaryEntries'),
+        collection(db, 'trips', this.trip.id, 'diaryEntries'),
         orderBy('createdAt', 'desc')
       );
       
-      return onSnapshot(q, (snapshot) => {
-        diaryEntries.value = snapshot.docs.map(doc => ({
+      this.unsubscribe = onSnapshot(q, (snapshot) => {
+        this.diaryEntries = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
-        loadingEntries.value = false;
+        this.loadingEntries = false;
       }, (error) => {
         console.error("Error loading entries:", error);
-        errorMessage.value = "Failed to load diary entries";
-        loadingEntries.value = false;
+        this.errorMessage = "Failed to load diary entries";
+        this.loadingEntries = false;
       });
-    };
+    },
 
-    // Trigger file input click
-    const triggerFileInput = () => {
-      if (cameraActive.value) stopCamera();
-      fileInput.value.click();
-    };
+    triggerFileInput() {
+      if (this.cameraActive) this.stopCamera();
+      this.$refs.fileInput.click();
+    },
 
-    // Handle image upload
-    const handleImageUpload = (event) => {
+    handleImageUpload(event) {
       const file = event.target.files[0];
-      if (file) {
-        if (file.size > 5 * 1024 * 1024) { // 5MB limit
-          errorMessage.value = "Image size should be less than 5MB";
-          return;
-        }
-        imageFile.value = file;
+      if (file && file.size <= 5 * 1024 * 1024) {
+        this.imageFile = file;
         const reader = new FileReader();
         reader.onload = (e) => {
-          imagePreview.value = e.target.result;
+          this.imagePreview = e.target.result;
         };
         reader.readAsDataURL(file);
       }
-    };
+    },
 
-    // Start camera
-    const startCamera = async () => {
+    async toggleCamera() {
+      if (this.cameraActive) {
+        this.stopCamera();
+      } else {
+        await this.startCamera();
+      }
+    },
+
+    async startCamera() {
       try {
-        cameraActive.value = true;
-        cameraStream.value = await navigator.mediaDevices.getUserMedia({
+        this.cameraActive = true;
+        this.cameraStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment' },
           audio: false
         });
-        if (cameraPreview.value) {
-          cameraPreview.value.srcObject = cameraStream.value;
-        }
+        this.$refs.cameraPreview.srcObject = this.cameraStream;
       } catch (error) {
         console.error("Error accessing camera:", error);
-        errorMessage.value = "Could not access camera. Please check permissions.";
-        cameraActive.value = false;
+        this.errorMessage = "Could not access camera";
+        this.cameraActive = false;
       }
-    };
+    },
 
-    // Stop camera
-    const stopCamera = () => {
-      if (cameraStream.value) {
-        cameraStream.value.getTracks().forEach(track => track.stop());
-        cameraStream.value = null;
+    stopCamera() {
+      if (this.cameraStream) {
+        this.cameraStream.getTracks().forEach(track => track.stop());
+        this.cameraStream = null;
       }
-      cameraActive.value = false;
-    };
+      this.cameraActive = false;
+    },
 
-    // Capture photo from camera
-    const capturePhoto = () => {
-      if (!cameraPreview.value) return;
-      
+    capturePhoto() {
       const canvas = document.createElement('canvas');
-      canvas.width = cameraPreview.value.videoWidth;
-      canvas.height = cameraPreview.value.videoHeight;
+      canvas.width = this.$refs.cameraPreview.videoWidth;
+      canvas.height = this.$refs.cameraPreview.videoHeight;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(cameraPreview.value, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(this.$refs.cameraPreview, 0, 0, canvas.width, canvas.height);
       
       canvas.toBlob((blob) => {
-        imageFile.value = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
-        imagePreview.value = canvas.toDataURL('image/jpeg');
-        stopCamera();
+        this.imageFile = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
+        this.imagePreview = canvas.toDataURL('image/jpeg');
+        this.stopCamera();
       }, 'image/jpeg', 0.9);
-    };
+    },
 
-    // Remove selected image
-    const removeImage = () => {
-      imageFile.value = null;
-      imagePreview.value = null;
-    };
+    removeImage() {
+      this.imageFile = null;
+      this.imagePreview = null;
+    },
 
-    // Upload image to Firebase Storage
-    const uploadImage = async () => {
-      if (!imageFile.value) return null;
+    async uploadImage() {
+      if (!this.imageFile) return null;
       
       try {
-        const filePath = `diaryEntries/${props.trip.id}/${Date.now()}_${imageFile.value.name}`;
+        const filePath = `diaryEntries/${this.trip.id}/${Date.now()}_${this.imageFile.name}`;
         const fileRef = storageRef(storage, filePath);
-        await uploadBytes(fileRef, imageFile.value);
+        await uploadBytes(fileRef, this.imageFile);
         return await getDownloadURL(fileRef);
       } catch (error) {
         console.error("Error uploading image:", error);
         throw error;
       }
-    };
+    },
 
-    // Save diary entry to Firestore
-    const saveDiaryEntry = async () => {
-      if (!diaryTitle.value.trim() || !diaryContent.value.trim()) return;
+    async saveDiaryEntry() {
+      if (!this.diaryTitle.trim() || !this.diaryContent.trim()) return;
       
-      loading.value = true;
-      errorMessage.value = '';
+      this.loading = true;
+      this.errorMessage = '';
 
       try {
         let imageUrl = null;
-        if (imageFile.value) {
-          imageUrl = await uploadImage();
+        if (this.imageFile) {
+          imageUrl = await this.uploadImage();
         }
 
-        await addDoc(collection(db, 'trips', props.trip.id, 'diaryEntries'), {
-          title: diaryTitle.value.trim(),
-          content: diaryContent.value.trim(),
+        await addDoc(collection(db, 'trips', this.trip.id, 'diaryEntries'), {
+          title: this.diaryTitle.trim(),
+          content: this.diaryContent.trim(),
           imageUrl,
           createdAt: new Date()
         });
 
-        resetForm();
+        this.resetForm();
       } catch (error) {
         console.error("Error saving entry:", error);
-        errorMessage.value = "Failed to save diary entry";
+        this.errorMessage = "Failed to save diary entry";
       } finally {
-        loading.value = false;
+        this.loading = false;
       }
-    };
+    },
 
-    // Delete diary entry
-    const deleteEntry = async (entryId, imageUrl) => {
+    async deleteEntry(entryId, imageUrl) {
       if (!confirm('Are you sure you want to delete this entry?')) return;
       
-      loading.value = true;
+      this.loading = true;
       try {
-        // Delete image from Storage if exists
         if (imageUrl) {
           const imageRef = storageRef(storage, imageUrl);
           await deleteObject(imageRef);
         }
         
-        // Delete entry from Firestore
-        await deleteDoc(doc(db, 'trips', props.trip.id, 'diaryEntries', entryId));
+        await deleteDoc(doc(db, 'trips', this.trip.id, 'diaryEntries', entryId));
       } catch (error) {
         console.error("Error deleting entry:", error);
-        errorMessage.value = "Failed to delete diary entry";
+        this.errorMessage = "Failed to delete diary entry";
       } finally {
-        loading.value = false;
+        this.loading = false;
       }
-    };
+    },
 
-    // Reset form
-    const resetForm = () => {
-      diaryTitle.value = '';
-      diaryContent.value = '';
-      imageFile.value = null;
-      imagePreview.value = null;
-      errorMessage.value = '';
-      if (cameraActive.value) stopCamera();
-    };
+    resetForm() {
+      this.diaryTitle = '';
+      this.diaryContent = '';
+      this.imageFile = null;
+      this.imagePreview = null;
+      this.errorMessage = '';
+      if (this.cameraActive) this.stopCamera();
+    },
 
-    // Format date
-    const formatDate = (timestamp) => {
+    formatDate(timestamp) {
       if (!timestamp) return '';
       const date = timestamp.toDate();
       return date.toLocaleDateString('en-US', {
         year: 'numeric',
-        month: 'long',
+        month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
       });
-    };
-
-    // Load entries when component mounts
-    let unsubscribe;
-    onMounted(() => {
-      unsubscribe = loadDiaryEntries();
-    });
-
-    // Cleanup on unmount
-    onUnmounted(() => {
-      if (unsubscribe) unsubscribe();
-      if (cameraActive.value) stopCamera();
-    });
-
-    // Filter entries by search query
-    const filteredDiaryEntries = computed(() => {
-      return diaryEntries.value.filter(entry => 
-        entry.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        entry.content.toLowerCase().includes(searchQuery.value.toLowerCase())
-      );
-    });
-
-    return {
-      diaryTitle,
-      diaryContent,
-      diaryEntries,
-      imagePreview,
-      searchQuery,
-      loading,
-      loadingEntries,
-      errorMessage,
-      cameraActive,
-      cameraPreview,
-      fileInput,
-      saveDiaryEntry,
-      resetForm,
-      handleImageUpload,
-      removeImage,
-      deleteEntry,
-      filteredDiaryEntries,
-      formatDate,
-      triggerFileInput,
-      startCamera,
-      stopCamera,
-      capturePhoto
-    };
+    }
   }
 };
 </script>
 
 <style scoped>
-.travel-diary {
+.travel-diary-container {
+  max-width: 800px;
+  margin: 0 auto;
   padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.travel-diary h3 {
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.header h2 {
+  color: #2c3e50;
+  margin: 0;
+}
+
+.back-btn {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: #e9e9e9;
+}
+
+.entry-form {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.entry-form h3 {
+  margin-top: 0;
   margin-bottom: 20px;
   color: #2c3e50;
 }
 
-.list-group-item {
-  border-radius: 8px !important;
-  transition: all 0.3s ease;
+.form-group {
+  margin-bottom: 15px;
 }
 
-.list-group-item:hover {
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+.form-input,
+.form-textarea,
+.search-input {
+  width: 100%;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
 }
 
-.btn-primary {
-  background-color: #3498db;
-  border-color: #3498db;
+.form-input:focus,
+.form-textarea:focus,
+.search-input:focus {
+  outline: none;
+  border-color: #42b883;
+  box-shadow: 0 0 0 2px rgba(66, 184, 131, 0.2);
 }
 
-.btn-danger {
-  background-color: #e74c3c;
+.form-textarea {
+  resize: vertical;
+}
+
+.image-upload {
+  margin-bottom: 20px;
+}
+
+.upload-options {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.upload-btn {
+  flex: 1;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.upload-btn:hover {
+  background: #e9e9e9;
+}
+
+.upload-btn.active {
+  background: #e74c3c;
+  color: white;
   border-color: #e74c3c;
-}
-
-.alert {
-  max-width: 600px;
-  margin: 20px auto;
-}
-
-.spinner-border {
-  width: 1.5rem;
-  height: 1.5rem;
-  border-width: 0.2em;
-}
-
-.img-fluid {
-  max-height: 200px;
-  object-fit: contain;
-  border-radius: 4px;
 }
 
 .camera-preview {
   position: relative;
-  background-color: #000;
+  margin-bottom: 15px;
   border-radius: 8px;
   overflow: hidden;
+  background: #000;
 }
 
 .camera-preview video {
   width: 100%;
-  max-height: 300px;
   display: block;
 }
 
-.bi {
-  margin-right: 5px;
+.capture-btn {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.image-preview {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.preview-image {
+  width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.submit-btn,
+.cancel-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submit-btn {
+  background: #42b883;
+  color: white;
+  border: none;
+}
+
+.submit-btn:hover {
+  background: #389d73;
+}
+
+.submit-btn:disabled {
+  background: #b3e0cc;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.cancel-btn:hover {
+  background: #e9e9e9;
+}
+
+.search-box {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  padding-left: 40px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+}
+
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.entries-list {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.entries-list h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+.entry-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  transition: all 0.2s;
+}
+
+.entry-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.entry-content {
+  flex: 1;
+}
+
+.entry-content h4 {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+}
+
+.entry-date {
+  font-size: 0.85rem;
+  color: #777;
+  margin-bottom: 10px;
+}
+
+.entry-text {
+  margin: 0 0 15px 0;
+  white-space: pre-line;
+}
+
+.entry-image img {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 6px;
+  border: 1px solid #eee;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #e74c3c;
+  cursor: pointer;
+  padding: 5px;
+  margin-left: 15px;
+  transition: all 0.2s;
+}
+
+.delete-btn:hover {
+  color: #c0392b;
+}
+
+.delete-btn:disabled {
+  color: #ffb8b8;
+  cursor: not-allowed;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: #ddd;
+  margin-bottom: 15px;
+}
+
+.empty-state p {
+  color: #777;
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .back-btn {
+    align-self: flex-end;
+  }
+
+  .upload-options {
+    flex-direction: column;
+  }
 }
 </style>

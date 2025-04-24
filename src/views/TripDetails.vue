@@ -1,37 +1,60 @@
 <template>
-  <div class="container py-5">
-    <router-link to="/home" class="btn btn-outline-secondary mb-3">Back</router-link>
-    
-    <h2>{{ trip ? trip.name : 'Loading...' }} - Details</h2>
-    <p><strong>Country:</strong> {{ trip ? trip.country : 'No data' }}</p>
-    <p><strong>Departure Date:</strong> {{ trip ? trip.departureDate : 'No data' }}</p>
-    <p><strong>Arrival Date:</strong> {{ trip ? trip.arrivalDate : 'No data' }}</p>
-
-    <div class="d-flex gap-3 my-4">
-      <button class="btn btn-green" @click="addTravelPoints">Add Travel Points</button>
-      <button class="btn btn-green" @click="planBudget">Budget Planning</button>
-      <button class="btn btn-green" @click="addPackingList">Add to Packing List</button>
-      <button class="btn btn-green" @click="addReservations">Reservations</button>
-      <button class="btn btn-green" @click="addTravelDiary">Travel Diary</button>
+  <div class="trip-details container-fluid py-4 py-md-5 px-3 px-md-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <router-link to="/home" class="btn btn-outline-success">
+        <i class="fas fa-arrow-left me-2"></i>Back to Trips
+      </router-link>
     </div>
 
-    <div v-if="isTravelPointsVisible">
+    <div class="card shadow-sm mb-5">
+      <div class="card-body p-4 p-md-5">
+        <h2 class="text-success mb-4">{{ trip ? trip.name : 'Loading...' }}</h2>
+        
+        <div class="trip-info row">
+          <div class="col-md-6">
+            <p><strong><i class="fas fa-map-marker-alt text-success me-2"></i>Country:</strong> {{ trip?.country || 'No data' }}</p>
+            <p><strong><i class="far fa-calendar-alt text-success me-2"></i>Departure:</strong> {{ formatDate(trip?.departureDate) }}</p>
+            <p><strong><i class="far fa-calendar-alt text-success me-2"></i>Arrival:</strong> {{ formatDate(trip?.arrivalDate) }}</p>
+          </div>
+        </div>
+
+        <div class="trip-actions d-flex flex-wrap gap-2 mt-4">
+          <button @click="activateSection('travelPoints')" class="btn btn-success">
+            <i class="fas fa-map-marked-alt me-2"></i>Travel Points
+          </button>
+          <button @click="activateSection('budget')" class="btn btn-success">
+            <i class="fas fa-wallet me-2"></i>Budget
+          </button>
+          <button @click="activateSection('packingList')" class="btn btn-success">
+            <i class="fas fa-suitcase me-2"></i>Packing List
+          </button>
+          <button @click="activateSection('reservations')" class="btn btn-success">
+            <i class="fas fa-hotel me-2"></i>Reservations
+          </button>
+          <button @click="activateSection('travelDiary')" class="btn btn-success">
+            <i class="fas fa-book me-2"></i>Travel Diary
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="activeSection === 'travelPoints'" class="card shadow-sm mb-5">
       <TravelPoints :tripId="trip?.id" @close="closeSection" />
     </div>
 
-    <div v-if="isBudgetVisible">
+    <div v-if="activeSection === 'budget'" class="card shadow-sm mb-5">
       <Budget :trip="trip" @close="closeSection" />
     </div>
 
-    <div v-if="isPackingListVisible">
+    <div v-if="activeSection === 'packingList'" class="card shadow-sm mb-5">
       <PackingList :trip="trip" @close="closeSection" />
     </div>
 
-    <div v-if="isReservationsVisible">
+    <div v-if="activeSection === 'reservations'" class="card shadow-sm mb-5">
       <Reservations :trip="trip" @close="closeSection" />
     </div>
 
-    <div v-if="isTravelDiaryVisible">
+    <div v-if="activeSection === 'travelDiary'" class="card shadow-sm mb-5">
       <TravelDiary :trip="trip" @close="closeSection" />
     </div>
   </div>
@@ -64,100 +87,42 @@ export default {
   },
   setup(props) {
     const trip = ref(null);
-    const isTravelPointsVisible = ref(false);
-    const isBudgetVisible = ref(false);
-    const isPackingListVisible = ref(false);
-    const isReservationsVisible = ref(false);
-    const isTravelDiaryVisible = ref(false);
+    const activeSection = ref(null);
+
+    const formatDate = (dateString) => {
+      if (!dateString) return 'No data';
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString(undefined, options);
+    };
 
     const loadTrip = async () => {
       try {
-        console.log('Loading trip with ID:', props.id);
         const tripRef = doc(db, 'trips', props.id);
         const tripDoc = await getDoc(tripRef);
-
         if (tripDoc.exists()) {
-          trip.value = {
-            id: tripDoc.id,
-            ...tripDoc.data()
-          };
-          console.log('Trip loaded:', trip.value);
-        } else {
-          console.log('No trip found with this ID');
+          trip.value = { id: tripDoc.id, ...tripDoc.data() };
         }
       } catch (error) {
         console.error("Error loading trip:", error);
       }
     };
 
-    onMounted(loadTrip);
-
-    watch(() => props.id, (newId) => {
-      if (newId) {
-        loadTrip();
-      }
-    });
-
-    const addTravelPoints = () => {
-      isTravelPointsVisible.value = true;
-      isBudgetVisible.value = false;
-      isPackingListVisible.value = false;
-      isReservationsVisible.value = false;
-      isTravelDiaryVisible.value = false;
-    };
-
-    const planBudget = () => {
-      isTravelPointsVisible.value = false;
-      isBudgetVisible.value = true;
-      isPackingListVisible.value = false;
-      isReservationsVisible.value = false;
-      isTravelDiaryVisible.value = false;
-    };
-
-    const addPackingList = () => {
-      isTravelPointsVisible.value = false;
-      isBudgetVisible.value = false;
-      isPackingListVisible.value = true;
-      isReservationsVisible.value = false;
-      isTravelDiaryVisible.value = false;
-    };
-
-    const addReservations = () => {
-      isTravelPointsVisible.value = false;
-      isBudgetVisible.value = false;
-      isPackingListVisible.value = false;
-      isReservationsVisible.value = true;
-      isTravelDiaryVisible.value = false;
-    };
-
-    const addTravelDiary = () => {
-      isTravelPointsVisible.value = false;
-      isBudgetVisible.value = false;
-      isPackingListVisible.value = false;
-      isReservationsVisible.value = false;
-      isTravelDiaryVisible.value = true;  
+    const activateSection = (section) => {
+      activeSection.value = activeSection.value === section ? null : section;
     };
 
     const closeSection = () => {
-      isTravelPointsVisible.value = false;
-      isBudgetVisible.value = false;
-      isPackingListVisible.value = false;
-      isReservationsVisible.value = false;
-      isTravelDiaryVisible.value = false;
+      activeSection.value = null;
     };
+
+    onMounted(loadTrip);
+    watch(() => props.id, loadTrip);
 
     return {
       trip,
-      isTravelPointsVisible,
-      isBudgetVisible,
-      isPackingListVisible,
-      isReservationsVisible,
-      isTravelDiaryVisible,
-      addTravelPoints,
-      planBudget,
-      addPackingList,
-      addReservations,
-      addTravelDiary,
+      activeSection,
+      formatDate,
+      activateSection,
       closeSection
     };
   }
@@ -165,97 +130,47 @@ export default {
 </script>
 
 <style scoped>
-.container {
-  max-width: 960px; 
+.trip-details {
+  max-width: 1200px;
   margin: 0 auto;
 }
 
-.modal-content {
-  max-width: 500px;
-  margin: auto;
+.card {
+  border: none;
+  border-radius: 0.75rem;
 }
 
-h2 {
-  font-size: 2rem;
-  margin-bottom: 20px;
-  color: #333;
+.btn-success {
+  background-color: #42b883;
+  border-color: #42b883;
 }
 
-p {
-  font-size: 1.1rem;
-  margin-bottom: 10px;
+.btn-success:hover {
+  background-color: #358d73;
+  border-color: #358d73;
 }
 
-strong {
-  color: #333;
+.btn-outline-success {
+  color: #42b883;
+  border-color: #42b883;
 }
 
-.d-flex {
-  gap: 10px;
+.btn-outline-success:hover {
+  background-color: rgba(66, 184, 131, 0.1);
 }
 
-.btn-green {
-  background-color: #1e88e5; 
-  border-color: #1e88e5;
-  padding: 10px 20px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  color: white;
+.trip-actions .btn {
+  flex: 1 1 auto;
+  min-width: 150px;
 }
 
-.btn-green:hover {
-  background-color: #388e73; 
-  border-color: #388e73;
-}
-
-.error {
-  color: red;
-  font-size: 1rem;
-  margin-top: 10px;
-}
-
-button {
-  font-size: 1rem;
-  padding: 10px 15px;
-}
-
-button:focus {
-  outline: none;
-  box-shadow: none;
-}
-
-section {
-  margin-top: 20px;
-}
-
-section h3 {
-  font-size: 1.5rem;
-  margin-bottom: 15px;
-  color: #555;
-}
-
-section p {
-  font-size: 1.1rem;
-  color: #777;
-}
-
-section .btn-green {
-  margin-right: 10px;
-}
-
-@media (max-width: 767px) {
-  .container {
-    padding: 20px;
+@media (max-width: 768px) {
+  .trip-actions .btn {
+    flex: 1 1 100%;
   }
-
-  h2 {
-    font-size: 1.5rem;
-  }
-
-  .btn-green {
-    font-size: 0.9rem;
-    padding: 8px 15px;
+  
+  .trip-details {
+    padding: 1.5rem !important;
   }
 }
 </style>

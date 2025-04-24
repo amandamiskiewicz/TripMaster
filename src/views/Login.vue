@@ -1,5 +1,5 @@
 <template>
-  <div class="login-page container d-flex flex-column justify-content-center align-items-center min-vh-100 py-5">
+  <div class="login-page vh-100 d-flex justify-content-center align-items-center p-3" style="background-color: #f8f9fa;">
     <div class="login-card card shadow-sm p-4 p-md-5 w-100" style="max-width: 500px;">
       <div class="text-center mb-4">
         <img src="/icons/icon-192x192.png" alt="TripMaster Logo" class="mb-3" style="width: 80px;">
@@ -105,8 +105,15 @@ export default {
 
 <style scoped>
 .login-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
 }
-
 
 .login-card {
   border: none;
@@ -138,12 +145,16 @@ export default {
 }
 
 .alert {
-  border-radius: 0;
+  border-radius: 0.5rem;
 }
 
 @media (max-width: 576px) {
   .login-card {
     padding: 2rem !important;
+  }
+  
+  .login-page {
+    padding: 1rem !important;
   }
 }
 </style>

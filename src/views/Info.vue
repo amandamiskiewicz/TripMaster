@@ -1,6 +1,5 @@
 <template>
   <div class="info-page container py-5 text-center">
-    <!-- Reszta kodu pozostaje bez zmian -->
     <div class="text-center mb-4">
       <router-link to="/" class="btn btn-outline-success">
         <i class="fas fa-arrow-left me-2"></i>Back to Home
@@ -13,8 +12,6 @@
         <div class="app-description mx-auto" style="max-width: 700px;">
           <p class="lead">
             Planning a trip can be overwhelming, but with TripMaster, organizing your adventures has never been easier.
-          </p>
-          <p>
             TripMaster is a comprehensive travel planning app designed to simplify every step of your journey—from choosing a destination to packing your bags.
             Whether you're a spontaneous explorer or a meticulous planner, this app ensures that you can focus on the excitement of travel rather than the hassle of logistics.
           </p>

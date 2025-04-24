@@ -1,69 +1,93 @@
 <template>
-  <div class="container py-4">
-    <h2 class="mb-4">Your Travel Points</h2>
+  <div class="container-fluid py-4 px-3 px-md-5">
+    <div class="row">
+      <div class="col-12">
+        <h2 class="mb-4 text-success">Your Travel Points</h2>
 
-    <div class="alert alert-danger" v-if="errorMessage">{{ errorMessage }}</div>
-    <div class="alert alert-success" v-if="successMessage">{{ successMessage }}</div>
+        <div class="alert alert-danger" v-if="errorMessage">{{ errorMessage }}</div>
+        <div class="alert alert-success" v-if="successMessage">{{ successMessage }}</div>
 
-    <div class="row mb-4">
-      <div class="col-md-6">
-        <div class="mb-3 position-relative">
-          <input
-            v-model="searchQuery"
-            @input="fetchSuggestions"
-            @keydown.down.prevent="highlightNext"
-            @keydown.up.prevent="highlightPrev"
-            @keydown.enter.prevent="selectHighlighted"
-            type="text"
-            class="form-control"
-            placeholder="Enter location name"
-          />
-          <ul v-if="suggestions.length" class="list-group position-absolute w-100 z-3">
-            <li
-              v-for="(suggestion, index) in suggestions"
-              :key="index"
-              :class="['list-group-item', { active: index === highlightedIndex }]"
-              @click="selectSuggestion(suggestion)"
-            >
-              {{ suggestion.display_name }}
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="mb-3">
-          <select v-model="selectedCategory" class="form-select">
-            <option value="" disabled>Select Category</option>
-            <option value="Attraction">Attraction</option>
-            <option value="Accommodation">Accommodation</option>
-            <option value="Restaurant">Restaurant</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-      </div>
-    </div>
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="position-relative">
+                  <input
+                    v-model="searchQuery"
+                    @input="fetchSuggestions"
+                    @keydown.down.prevent="highlightNext"
+                    @keydown.up.prevent="highlightPrev"
+                    @keydown.enter.prevent="selectHighlighted"
+                    type="text"
+                    class="form-control form-control-lg"
+                    placeholder="Enter location name"
+                  />
+                  <ul v-if="suggestions.length" class="list-group position-absolute w-100 z-3 mt-1">
+                    <li
+                      v-for="(suggestion, index) in suggestions"
+                      :key="index"
+                      :class="['list-group-item', { 'bg-success text-white': index === highlightedIndex }]"
+                      @click="selectSuggestion(suggestion)"
+                      class="cursor-pointer"
+                    >
+                      {{ suggestion.display_name }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <select v-model="selectedCategory" class="form-select form-select-lg">
+                  <option value="" disabled>Select Category</option>
+                  <option value="Attraction">Attraction</option>
+                  <option value="Accommodation">Accommodation</option>
+                  <option value="Restaurant">Restaurant</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
 
-    <div class="mb-4 d-flex gap-2">
-      <button class="btn btn-primary" @click="addPoint">Add Point</button>
-      <button class="btn btn-secondary" @click="centerToCurrentLocation">
-        <i class="bi bi-geo-alt"></i> Use My Current Location
-      </button>
-    </div>
-
-    <div class="mb-3">
-      <h4>Your Added Points:</h4>
-      <ul class="list-group">
-        <li v-for="(point, index) in points" :key="index" class="list-group-item d-flex justify-content-between align-items-center">
-          <div>
-            <strong>{{ point.name }}</strong> - {{ point.category }}
-            <div class="text-muted small">({{ point.coords[0].toFixed(4) }}, {{ point.coords[1].toFixed(4) }})</div>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+              <button class="btn btn-success px-4 py-2" @click="addPoint">
+                <i class="bi bi-plus-circle"></i> Add Point
+              </button>
+              <button class="btn btn-outline-success px-4 py-2" @click="centerToCurrentLocation">
+                <i class="bi bi-geo-alt"></i> Use My Current Location
+              </button>
+            </div>
           </div>
-          <button class="btn btn-danger btn-sm" @click="deletePoint(index)">Delete</button>
-        </li>
-      </ul>
-    </div>
+        </div>
 
-    <div id="map" style="height: 500px;" @click="handleMapClick"></div>
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+            <h4 class="text-success mb-3">Your Added Points:</h4>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <tbody>
+                  <tr v-for="(point, index) in points" :key="index">
+                    <td>
+                      <strong>{{ point.name }}</strong>
+                      <div class="text-muted small">{{ point.category }}</div>
+                      <div class="text-muted small">({{ point.coords[0].toFixed(4) }}, {{ point.coords[1].toFixed(4) }})</div>
+                    </td>
+                    <td class="text-end">
+                      <button class="btn btn-outline-danger btn-sm" @click="deletePoint(index)">
+                        <i class="bi bi-trash"></i> Delete
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-body p-0">
+            <div id="map" style="height: 500px; min-height: 300px;" @click="handleMapClick"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -72,7 +96,7 @@ import L from "leaflet";
 import { db } from '../firebase';
 import { collection, addDoc, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 
-// Marker icons
+// Marker icons - updated to use green color scheme
 const blueIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -163,12 +187,10 @@ export default {
           return;
         }
 
-        // Remove previous temporary marker if exists
         if (this.tempMarker) {
           this.map.removeLayer(this.tempMarker);
         }
 
-        // Add new temporary marker
         this.tempMarker = L.marker(e.latlng, {
           icon: greenIcon,
           draggable: true
@@ -176,11 +198,8 @@ export default {
           .bindPopup("New point - " + this.selectedCategory)
           .openPopup();
 
-        // Set flag for adding from map
         this.isAddingFromMap = true;
         this.userCoords = [e.latlng.lat, e.latlng.lng];
-
-        // Reverse geocode to get address
         this.reverseGeocode([e.latlng.lat, e.latlng.lng]);
       });
     },
@@ -194,11 +213,8 @@ export default {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             this.userCoords = [position.coords.latitude, position.coords.longitude];
-            
-            // Center map to current location
             this.map.setView(this.userCoords, 13);
             
-            // Add or update user location marker
             if (this.userLocationMarker) {
               this.userLocationMarker.setLatLng(this.userCoords);
             } else {
@@ -208,7 +224,6 @@ export default {
               }).addTo(this.map);
             }
             
-            // Reverse geocode to get address
             this.reverseGeocode(this.userCoords);
           },
           (error) => {
@@ -254,17 +269,14 @@ export default {
         let name = this.searchQuery;
 
         if (this.isAddingFromMap && this.userCoords) {
-          // Adding from map click
           coords = this.userCoords;
           name = this.searchQuery || `Point at ${coords[0].toFixed(4)}, ${coords[1].toFixed(4)}`;
           
-          // Remove temporary marker
           if (this.tempMarker) {
             this.map.removeLayer(this.tempMarker);
             this.tempMarker = null;
           }
         } else if (this.searchQuery) {
-          // Adding from search
           const response = await fetch(
             `https://nominatim.openstreetmap.org/search?format=json&q=${this.searchQuery}`
           );
@@ -326,12 +338,10 @@ export default {
             });
           });
 
-          // Center map to show all points if there are any
           if (this.points.length > 0) {
             const group = new L.featureGroup(this.points.map(p => p.marker));
             this.map.fitBounds(group.getBounds().pad(0.2));
           } else {
-            // If no points, center to the country coordinates
             this.map.setView(this.countryCoords, this.initialZoom);
           }
         },
@@ -356,7 +366,6 @@ export default {
       }
     },
 
-    // Other methods remain the same...
     async fetchSuggestions() {
       if (this.searchQuery.length < 3) {
         this.suggestions = [];
@@ -408,21 +417,8 @@ export default {
 </script>
 
 <style scoped>
-.list-group-item.active {
-  background-color: #007bff;
-  color: white;
-}
-
-.position-relative {
-  position: relative;
-}
-
-.position-absolute {
-  position: absolute;
-}
-
-.z-3 {
-  z-index: 3;
+.cursor-pointer {
+  cursor: pointer;
 }
 
 #map {
@@ -435,9 +431,57 @@ export default {
   margin-bottom: 1rem;
 }
 
-.btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.btn-success {
+  background-color: #42b883;
+  border-color: #42b883;
+}
+
+.btn-success:hover {
+  background-color: #358d73;
+  border-color: #358d73;
+}
+
+.btn-outline-success {
+  color: #42b883;
+  border-color: #42b883;
+}
+
+.btn-outline-success:hover {
+  background-color: rgba(66, 184, 131, 0.1);
+}
+
+.btn-outline-danger {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-outline-danger:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+.card {
+  border: none;
+  border-radius: 12px;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(66, 184, 131, 0.05);
+}
+
+.list-group-item.active {
+  background-color: #42b883;
+  border-color: #42b883;
+}
+
+.position-relative {
+  position: relative;
+}
+
+.position-absolute {
+  position: absolute;
+}
+
+.z-3 {
+  z-index: 3;
 }
 </style>
