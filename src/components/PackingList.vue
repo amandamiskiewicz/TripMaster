@@ -1,105 +1,131 @@
 <template>
-  <div class="packing-list">
-    <div class="header">
-      <h2>Packing List - {{ trip.name }}</h2>
-      <button @click="$emit('close')" class="close-btn" aria-label="Close packing list">
+  <div class="packing-list container-fluid p-3 p-md-4">
+    <div class="header d-flex justify-content-between align-items-center mb-4">
+      <h2 class="h4 mb-0 text-success">Packing List - {{ trip.name }}</h2>
+      <button @click="$emit('close')" class="btn btn-outline-secondary btn-sm" aria-label="Close packing list">
         <i class="fas fa-times"></i>
       </button>
     </div>
 
-    <div class="categories">
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mb-4">
       <div 
         v-for="category in categories" 
         :key="category.id"
-        class="category-card"
-        :class="{ active: selectedCategory === category.name }"
-        @click="selectCategory(category.name)"
+        class="col"
       >
-        <div class="category-content">
-          <h3>{{ category.name }}</h3>
-          <div class="progress-container">
-            <div class="progress-bar" :style="{ width: getProgress(category) + '%' }"></div>
+        <div 
+          class="card h-100 border-0 shadow-sm"
+          :class="{ 'border-success': selectedCategory === category.name }"
+          @click="selectCategory(category.name)"
+        >
+          <div class="card-body">
+            <h3 class="h5 card-title text-success">{{ category.name }}</h3>
+            <div class="progress mb-2" style="height: 6px;">
+              <div 
+                class="progress-bar bg-success" 
+                role="progressbar" 
+                :style="{ width: getProgress(category) + '%' }"
+                :aria-valuenow="getProgress(category)"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              ></div>
+            </div>
+            <p class="card-text small text-muted mb-0">
+              {{ getCheckedCount(category) }}/{{ category.items.length }} items
+            </p>
           </div>
-          <span class="progress-text">
-            {{ getCheckedCount(category) }}/{{ category.items.length }} items
-          </span>
         </div>
       </div>
     </div>
 
-    <div class="actions">
-      <button @click="showAddCategory = true" class="action-btn primary" aria-label="Add new category">
-        <i class="fas fa-plus"></i> Add New Category
+    <div class="d-flex flex-column flex-md-row gap-2 mb-4">
+      <button 
+        @click="showAddCategory = true" 
+        class="btn btn-success flex-grow-1"
+        aria-label="Add new category"
+      >
+        <i class="fas fa-plus me-2"></i> Add New Category
       </button>
       <button 
         @click="showAddItem = true" 
-        class="action-btn secondary"
+        class="btn btn-outline-success flex-grow-1"
         :disabled="!selectedCategory"
         aria-label="Add new item to selected category"
       >
-        <i class="fas fa-plus"></i> Add Item to {{ selectedCategory || 'Category' }}
+        <i class="fas fa-plus me-2"></i> Add Item to {{ selectedCategory || 'Category' }}
       </button>
     </div>
 
-    <div v-if="showAddCategory" class="add-form">
-      <input 
-        v-model="newCategory" 
-        placeholder="Enter category name"
-        class="form-input"
-        @keyup.enter="addCategory"
-        aria-label="Category name input"
-      >
-      <div class="form-actions">
-        <button @click="addCategory" class="form-btn confirm" aria-label="Confirm adding category">
-          <i class="fas fa-check"></i> Add
-        </button>
-        <button @click="showAddCategory = false" class="form-btn cancel" aria-label="Cancel adding category">
-          <i class="fas fa-times"></i> Cancel
-        </button>
-      </div>
-    </div>
-
-    <div v-if="showAddItem" class="add-form">
-      <input 
-        v-model="newItem" 
-        :placeholder="'Add item to ' + selectedCategory"
-        class="form-input"
-        @keyup.enter="addItem"
-        aria-label="Item name input"
-      >
-      <div class="form-actions">
-        <button @click="addItem" class="form-btn confirm" aria-label="Confirm adding item">
-          <i class="fas fa-check"></i> Add
-        </button>
-        <button @click="showAddItem = false" class="form-btn cancel" aria-label="Cancel adding item">
-          <i class="fas fa-times"></i> Cancel
-        </button>
-      </div>
-    </div>
-
-    <div v-if="selectedCategory" class="items-section">
-      <h3>{{ selectedCategory }}</h3>
-      <div class="items-list">
-        <div 
-          v-for="item in getCurrentItems()" 
-          :key="item.id"
-          class="item"
-        >
-          <label class="item-checkbox">
-            <input 
-              type="checkbox" 
-              v-model="item.checked"
-              @change="updateItem(item)"
-              :aria-label="(item.checked ? 'Unpack ' : 'Pack ') + item.name"
-            >
-            <span class="checkmark"></span>
-            <span class="item-name" :class="{ checked: item.checked }">
-              {{ item.name }}
-            </span>
-          </label>
-          <button @click="deleteItem(item.id)" class="delete-btn" :aria-label="'Delete ' + item.name">
-            <i class="fas fa-trash"></i>
+    <div v-if="showAddCategory" class="card mb-4 border-success">
+      <div class="card-body">
+        <div class="input-group mb-3">
+          <input 
+            v-model="newCategory" 
+            placeholder="Enter category name"
+            class="form-control"
+            @keyup.enter="addCategory"
+            aria-label="Category name input"
+          >
+          <button @click="addCategory" class="btn btn-success" aria-label="Confirm adding category">
+            <i class="fas fa-check me-1"></i> Add
           </button>
+          <button @click="showAddCategory = false" class="btn btn-outline-secondary" aria-label="Cancel adding category">
+            <i class="fas fa-times me-1"></i> Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showAddItem" class="card mb-4 border-success">
+      <div class="card-body">
+        <div class="input-group mb-3">
+          <input 
+            v-model="newItem" 
+            :placeholder="'Add item to ' + selectedCategory"
+            class="form-control"
+            @keyup.enter="addItem"
+            aria-label="Item name input"
+          >
+          <button @click="addItem" class="btn btn-success" aria-label="Confirm adding item">
+            <i class="fas fa-check me-1"></i> Add
+          </button>
+          <button @click="showAddItem = false" class="btn btn-outline-secondary" aria-label="Cancel adding item">
+            <i class="fas fa-times me-1"></i> Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="selectedCategory" class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h3 class="h5 card-title text-success mb-3">{{ selectedCategory }}</h3>
+        <div class="list-group">
+          <div 
+            v-for="item in getCurrentItems()" 
+            :key="item.id"
+            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+          >
+            <div class="form-check">
+              <input 
+                type="checkbox" 
+                v-model="item.checked"
+                @change="updateItem(item)"
+                class="form-check-input"
+                :id="'item-' + item.id"
+                :aria-label="(item.checked ? 'Unpack ' : 'Pack ') + item.name"
+              >
+              <label 
+                class="form-check-label" 
+                :for="'item-' + item.id"
+                :class="{ 'text-muted text-decoration-line-through': item.checked }"
+              >
+                {{ item.name }}
+              </label>
+            </div>
+            <button @click="deleteItem(item.id)" class="btn btn-link text-danger p-0" :aria-label="'Delete ' + item.name">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -239,303 +265,45 @@ export default {
 
 <style scoped>
 .packing-list {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-}
-
-.header h2 {
-  color: #333;
-  margin: 0;
-}
-
-.close-btn {
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 1rem;
-}
-
-.close-btn:hover {
-  background: #e9e9e9;
-}
-
-.categories {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 15px;
-  margin-bottom: 25px;
-}
-
-.category-card {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 15px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.category-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.category-card.active {
-  border-color: #42b883;
-  background-color: rgba(66, 184, 131, 0.05);
-}
-
-.category-content h3 {
-  margin: 0 0 10px 0;
-  font-size: 1.1rem;
-  color: #333;
-}
-
-.progress-container {
-  height: 6px;
-  background: #f0f0f0;
-  border-radius: 3px;
-  margin-bottom: 5px;
-  overflow: hidden;
-}
-
-.progress-bar {
-  height: 100%;
-  background: #42b883;
-  border-radius: 3px;
-  transition: width 0.3s;
-}
-
-.progress-text {
-  font-size: 0.8rem;
-  color: #666;
-}
-
-.actions {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.action-btn {
-  padding: 10px 15px;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.action-btn.primary {
-  background: #42b883;
-  color: white;
-  border: none;
-}
-
-.action-btn.primary:hover {
-  background: #389d73;
-}
-
-.action-btn.secondary {
-  background: white;
-  color: #42b883;
-  border: 1px solid #42b883;
-}
-
-.action-btn.secondary:hover {
-  background: #f0f9f5;
-}
-
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: #f5f5f5;
-  color: #999;
-  border-color: #ddd;
-}
-
-.add-form {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.form-input {
-  flex: 1;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #42b883;
-}
-
-.form-actions {
-  display: flex;
-  gap: 5px;
-}
-
-.form-btn {
-  padding: 10px 15px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  gap: 5px;
-}
-
-.form-btn.confirm {
-  background: #42b883;
-  color: white;
-}
-
-.form-btn.confirm:hover {
-  background: #389d73;
-}
-
-.form-btn.cancel {
-  background: #f5f5f5;
-  color: #666;
-}
-
-.form-btn.cancel:hover {
-  background: #e9e9e9;
-}
-
-.items-section {
-  margin-top: 30px;
-}
-
-.items-section h3 {
-  color: #333;
-  margin-bottom: 15px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #eee;
-}
-
-.items-list {
-  border: 1px solid #eee;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 15px;
-  background: white;
-  border-bottom: 1px solid #f5f5f5;
-}
-
-.item:last-child {
-  border-bottom: none;
-}
-
-.item-checkbox {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  flex-grow: 1;
-}
-
-.item-checkbox input {
-  position: absolute;
-  opacity: 0;
+.card {
+  transition: transform 0.2s, box-shadow 0.2s;
   cursor: pointer;
 }
 
-.checkmark {
-  position: relative;
-  height: 20px;
-  width: 20px;
-  background-color: white;
-  border: 2px solid #ddd;
-  border-radius: 4px;
-  margin-right: 12px;
-  transition: all 0.2s;
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 }
 
-.item-checkbox input:checked ~ .checkmark {
+.list-group-item {
+  transition: background-color 0.2s;
+}
+
+.btn-success {
   background-color: #42b883;
   border-color: #42b883;
 }
 
-.checkmark:after {
-  content: "";
-  position: absolute;
-  display: none;
-  left: 6px;
-  top: 2px;
-  width: 5px;
-  height: 10px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+.btn-success:hover {
+  background-color: #389d73;
+  border-color: #389d73;
 }
 
-.item-checkbox input:checked ~ .checkmark:after {
-  display: block;
+.btn-outline-success {
+  color: #42b883;
+  border-color: #42b883;
 }
 
-.item-name {
-  color: #333;
-  transition: all 0.2s;
+.btn-outline-success:hover {
+  background-color: rgba(66, 184, 131, 0.1);
 }
 
-.item-name.checked {
-  color: #999;
-  text-decoration: line-through;
-}
-
-.delete-btn {
-  background: none;
-  border: none;
-  color: #ff6b6b;
-  cursor: pointer;
-  padding: 5px;
-  margin-left: 10px;
-  transition: all 0.2s;
-}
-
-.delete-btn:hover {
-  color: #ff3b3b;
-}
-
-@media (max-width: 600px) {
-  .categories {
-    grid-template-columns: 1fr;
-  }
-  
-  .actions {
-    flex-direction: column;
-  }
-  
-  .form-actions {
-    flex-direction: column;
-  }
-  
-  .form-btn {
-    width: 100%;
-  }
+.form-check-input:checked {
+  background-color: #42b883;
+  border-color: #42b883;
 }
 </style>

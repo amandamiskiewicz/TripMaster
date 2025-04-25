@@ -23,12 +23,12 @@
       </div>
     </div>
     
-    <div class="d-flex justify-content-center mt-4">
+    <div v-if="trips.length > 0" class="d-flex justify-content-center mt-4">
       <button 
         class="btn btn-success px-4 py-2" 
         @click="showAddTripModal"
       >
-        {{ trips.length > 0 ? 'Add new trip' : 'Add your first trip' }}
+        Add new trip
       </button>
     </div>
 

@@ -1,124 +1,134 @@
 <template>
-  <div class="travel-diary-container">
-    <div class="header">
-      <h2>Travel Diary - {{ trip.name }}</h2>
-      <button @click="$emit('close')" class="back-btn">
-        <i class="fas fa-arrow-left"></i> Back
+  <div class="container-fluid p-3 p-md-5 travel-diary-container">
+    <div class="header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+      <h2 class="text-success mb-3 mb-md-0">Travel Diary - {{ trip.name }}</h2>
+      <button @click="$emit('close')" class="btn btn-outline-success">
+        <i class="fas fa-arrow-left me-2"></i>Back
       </button>
     </div>
 
-    <div class="entry-form">
-      <h3>New Entry</h3>
-      <div class="form-group">
-        <input 
-          v-model="diaryTitle" 
-          placeholder="Entry title" 
-          class="form-input"
-          required
-        />
-      </div>
-      <div class="form-group">
-        <textarea 
-          v-model="diaryContent" 
-          placeholder="Write your thoughts..." 
-          class="form-textarea"
-          rows="5"
-          required
-        ></textarea>
-      </div>
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h3 class="card-title text-success mb-4">New Entry</h3>
+        
+        <div class="mb-3">
+          <input 
+            v-model="diaryTitle" 
+            placeholder="Entry title" 
+            class="form-control"
+            required
+          />
+        </div>
+        
+        <div class="mb-3">
+          <textarea 
+            v-model="diaryContent" 
+            placeholder="Write your thoughts..." 
+            class="form-control"
+            rows="5"
+            required
+          ></textarea>
+        </div>
 
-      <div class="image-upload">
-        <div class="upload-options">
-          <button @click="triggerFileInput" class="upload-btn">
-            <i class="fas fa-upload"></i> Upload Photo
-          </button>
-          <button 
-            @click="toggleCamera" 
-            class="upload-btn"
-            :class="{ active: cameraActive }"
-          >
-            <i class="fas fa-camera"></i> {{ cameraActive ? 'Cancel' : 'Take Photo' }}
+        <div class="mb-3">
+          <div class="d-flex flex-column flex-sm-row gap-2 mb-3">
+            <button @click="triggerFileInput" class="btn btn-outline-success flex-grow-1">
+              <i class="fas fa-upload me-2"></i>Upload Photo
+            </button>
+            <button 
+              @click="toggleCamera" 
+              class="btn btn-outline-success flex-grow-1"
+              :class="{ 'btn-danger': cameraActive }"
+            >
+              <i class="fas fa-camera me-2"></i>{{ cameraActive ? 'Cancel' : 'Take Photo' }}
+            </button>
+          </div>
+          <input 
+            ref="fileInput"
+            type="file" 
+            @change="handleImageUpload" 
+            class="d-none" 
+            accept="image/*"
+          />
+        </div>
+
+        <div v-if="cameraActive" class="camera-preview mb-3 position-relative">
+          <video ref="cameraPreview" autoplay playsinline class="w-100 rounded"></video>
+          <button @click="capturePhoto" class="btn btn-success position-absolute bottom-0 start-50 translate-middle-x mb-3">
+            <i class="fas fa-camera me-2"></i>Capture
           </button>
         </div>
-        <input 
-          ref="fileInput"
-          type="file" 
-          @change="handleImageUpload" 
-          class="d-none" 
-          accept="image/*"
-        />
-      </div>
 
-      <div v-if="cameraActive" class="camera-preview">
-        <video ref="cameraPreview" autoplay playsinline></video>
-        <button @click="capturePhoto" class="capture-btn">
-          <i class="fas fa-camera"></i> Capture
-        </button>
-      </div>
+        <div v-if="imagePreview" class="image-preview mb-3 position-relative">
+          <img :src="imagePreview" alt="Preview" class="img-fluid rounded border border-success" />
+          <button @click="removeImage" class="btn btn-danger position-absolute top-0 end-0 m-2 rounded-circle">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
 
-      <div v-if="imagePreview" class="image-preview">
-        <img :src="imagePreview" alt="Preview" class="preview-image" />
-        <button @click="removeImage" class="remove-image-btn">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <div class="form-actions">
-        <button 
-          @click="saveDiaryEntry" 
-          class="submit-btn"
-          :disabled="!diaryTitle.trim() || !diaryContent.trim() || loading"
-        >
-          <span v-if="!loading">Save Entry</span>
-          <span v-else class="spinner"></span>
-        </button>
-        <button @click="resetForm" class="cancel-btn">
-          Clear
-        </button>
+        <div class="d-flex gap-2">
+          <button 
+            @click="saveDiaryEntry" 
+            class="btn btn-success flex-grow-1"
+            :disabled="!diaryTitle.trim() || !diaryContent.trim() || loading"
+          >
+            <span v-if="!loading">Save Entry</span>
+            <span v-else class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          </button>
+          <button @click="resetForm" class="btn btn-outline-secondary flex-grow-1">
+            Clear
+          </button>
+        </div>
       </div>
     </div>
 
-    <div class="search-box">
+    <div class="mb-4 position-relative">
       <input 
         v-model="searchQuery" 
         placeholder="Search entries..." 
-        class="search-input"
+        class="form-control ps-4"
       />
-      <i class="fas fa-search search-icon"></i>
+      <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
     </div>
 
-    <div v-if="loadingEntries" class="loading-indicator">
-      <div class="spinner"></div>
-    </div>
-
-    <div v-if="!loadingEntries && filteredDiaryEntries.length" class="entries-list">
-      <h3>Your Entries</h3>
-      <div 
-        v-for="entry in filteredDiaryEntries" 
-        :key="entry.id" 
-        class="entry-card"
-      >
-        <div class="entry-content">
-          <h4>{{ entry.title }}</h4>
-          <div class="entry-date">{{ formatDate(entry.createdAt) }}</div>
-          <p class="entry-text">{{ entry.content }}</p>
-          <div v-if="entry.imageUrl" class="entry-image">
-            <img :src="entry.imageUrl" alt="Entry image" />
-          </div>
-        </div>
-        <button 
-          @click="deleteEntry(entry.id, entry.imageUrl)" 
-          class="delete-btn"
-          :disabled="loading"
-        >
-          <i class="fas fa-trash"></i>
-        </button>
+    <div v-if="loadingEntries" class="text-center py-4">
+      <div class="spinner-border text-success" role="status">
+        <span class="visually-hidden">Loading...</span>
       </div>
     </div>
 
-    <div v-if="!loadingEntries && !filteredDiaryEntries.length" class="empty-state">
-      <i class="fas fa-book-open empty-icon"></i>
-      <p>No diary entries yet</p>
+    <div v-if="!loadingEntries && filteredDiaryEntries.length" class="card shadow-sm">
+      <div class="card-body">
+        <h3 class="card-title text-success mb-4">Your Entries</h3>
+        <div 
+          v-for="entry in filteredDiaryEntries" 
+          :key="entry.id" 
+          class="card mb-3"
+        >
+          <div class="card-body d-flex justify-content-between">
+            <div class="flex-grow-1">
+              <h4 class="text-success">{{ entry.title }}</h4>
+              <div class="text-muted small mb-2">{{ formatDate(entry.createdAt) }}</div>
+              <p class="card-text">{{ entry.content }}</p>
+              <div v-if="entry.imageUrl" class="mt-3">
+                <img :src="entry.imageUrl" alt="Entry image" class="img-fluid rounded border border-success" />
+              </div>
+            </div>
+            <button 
+              @click="deleteEntry(entry.id, entry.imageUrl)" 
+              class="btn btn-outline-danger ms-3 align-self-start"
+              :disabled="loading"
+            >
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="!loadingEntries && !filteredDiaryEntries.length" class="card shadow-sm text-center py-5">
+      <i class="fas fa-book-open text-muted mb-3" style="font-size: 3rem;"></i>
+      <p class="text-muted">No diary entries yet</p>
     </div>
   </div>
 </template>
@@ -351,352 +361,13 @@ export default {
 </script>
 
 <style scoped>
-.travel-diary-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-}
-
-.header h2 {
-  color: #2c3e50;
-  margin: 0;
-}
-
-.back-btn {
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  padding: 8px 15px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.back-btn:hover {
-  background: #e9e9e9;
-}
-
-.entry-form {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 30px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.entry-form h3 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  color: #2c3e50;
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-input,
-.form-textarea,
-.search-input {
-  width: 100%;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-}
-
-.form-input:focus,
-.form-textarea:focus,
-.search-input:focus {
-  outline: none;
-  border-color: #42b883;
-  box-shadow: 0 0 0 2px rgba(66, 184, 131, 0.2);
-}
-
-.form-textarea {
-  resize: vertical;
-}
-
-.image-upload {
-  margin-bottom: 20px;
-}
-
-.upload-options {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-.upload-btn {
-  flex: 1;
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  padding: 10px 15px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.upload-btn:hover {
-  background: #e9e9e9;
-}
-
-.upload-btn.active {
-  background: #e74c3c;
-  color: white;
-  border-color: #e74c3c;
-}
-
 .camera-preview {
-  position: relative;
-  margin-bottom: 15px;
-  border-radius: 8px;
-  overflow: hidden;
   background: #000;
-}
-
-.camera-preview video {
-  width: 100%;
-  display: block;
-}
-
-.capture-btn {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: white;
-  border: none;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  border-radius: 0.375rem;
 }
 
 .image-preview {
-  position: relative;
-  margin-bottom: 15px;
-}
-
-.preview-image {
-  width: 100%;
   max-height: 300px;
-  object-fit: contain;
-  border-radius: 8px;
-  border: 1px solid #eee;
-}
-
-.remove-image-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  border: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.form-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.submit-btn,
-.cancel-btn {
-  flex: 1;
-  padding: 12px;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.submit-btn {
-  background: #42b883;
-  color: white;
-  border: none;
-}
-
-.submit-btn:hover {
-  background: #389d73;
-}
-
-.submit-btn:disabled {
-  background: #b3e0cc;
-  cursor: not-allowed;
-}
-
-.cancel-btn {
-  background: #f5f5f5;
-  color: #333;
-  border: 1px solid #ddd;
-}
-
-.cancel-btn:hover {
-  background: #e9e9e9;
-}
-
-.search-box {
-  position: relative;
-  margin-bottom: 20px;
-}
-
-.search-input {
-  padding-left: 40px;
-}
-
-.search-icon {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #999;
-}
-
-.loading-indicator {
-  display: flex;
-  justify-content: center;
-  padding: 40px 0;
-}
-
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.entries-list {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.entries-list h3 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  color: #2c3e50;
-}
-
-.entry-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 20px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  transition: all 0.2s;
-}
-
-.entry-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.entry-content {
-  flex: 1;
-}
-
-.entry-content h4 {
-  margin: 0 0 5px 0;
-  color: #2c3e50;
-}
-
-.entry-date {
-  font-size: 0.85rem;
-  color: #777;
-  margin-bottom: 10px;
-}
-
-.entry-text {
-  margin: 0 0 15px 0;
-  white-space: pre-line;
-}
-
-.entry-image img {
-  max-width: 100%;
-  max-height: 300px;
-  border-radius: 6px;
-  border: 1px solid #eee;
-}
-
-.delete-btn {
-  background: none;
-  border: none;
-  color: #e74c3c;
-  cursor: pointer;
-  padding: 5px;
-  margin-left: 15px;
-  transition: all 0.2s;
-}
-
-.delete-btn:hover {
-  color: #c0392b;
-}
-
-.delete-btn:disabled {
-  color: #ffb8b8;
-  cursor: not-allowed;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 40px 20px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.empty-icon {
-  font-size: 3rem;
-  color: #ddd;
-  margin-bottom: 15px;
-}
-
-.empty-state p {
-  color: #777;
-  margin: 0;
-}
-
-@media (max-width: 600px) {
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  .back-btn {
-    align-self: flex-end;
-  }
-
-  .upload-options {
-    flex-direction: column;
-  }
+  overflow: hidden;
 }
 </style>
