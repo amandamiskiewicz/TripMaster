@@ -1,35 +1,42 @@
-# Trip-master
+# TripMaster – Twoja osobista aplikacja do planowania podróży
 
-This template should help get you started developing with Vue 3 in Vite.
+**TripMaster** to Twój nowy towarzysz w organizowaniu niezapomnianych wyjazdów!  
+Zamiast tracić czas na chaotyczne notatki, maile i listy rzeczy do zrobienia – zaplanuj wszystko w jednym miejscu.  
+Od wyboru celu podróży aż po ostatnią rzecz w walizce – z TripMaster planowanie jest proste, przyjemne i bez stresu.
 
-## Recommended IDE Setup
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## Spis treści
+- [Opis projektu](#opis-projektu)
+- [Funkcjonalności](#funkcjonalności)
+- [Technologie](#technologie)
 
-## Customize configuration
+## Opis projektu
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+Aplikacja umożliwia użytkownikom:
+- Zarządzać rezerwacjami hoteli
+- Organizować listy rzeczy, tak aby niczego nie zapomnieć
+- Przechowywać bilety i inne ważne dokumenty w jednym, łatwo dostępnym miejscu
+- Rejestrować się i logować, aby Twoje dane były zawsze bezpieczne i dostępne
 
-## Project Setup
+Aplikacja została stworzona przy użyciu **Vue**, wykorzystując **Vue router** do zarządzania stronami, **Firebase** oraz **Bootstrap** do stylizacji interfejsu.
 
-```sh
-npm install
-```
+## Funkcjonalności
 
-### Compile and Hot-Reload for Development
+- Przegląd i wybór miejsc podróży   
+- Interaktywna lista rzeczy do spakowania
+- Dodawanie i zarządzanie rezerwacjami
+- Zarządzanie listą biletów
+- Przypomnienia, które pomogą Ci niczego nie zapomnieć
+  
+## Technologie
 
-```sh
-npm run dev
-```
+- **Vue**: framework JavaScript służący do budowy interfejsów użytkownika i aplikacji internetowych.
+- **Vue Router**: przechodzenie między "stronami" w aplikacji.
+- **Bootstrap**: framework CSS używany do stylowania.
+- **Firebase**: przechowywanie danych w bazie.
+- **Firebase** authentication: logowanie i rejestracja użytkowników
+- **Firebase** storage: przesyłanie i przechowywanie plików
+  
 
-### Compile and Minify for Production
+  
 
-```sh
-npm run build
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
