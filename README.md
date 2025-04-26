@@ -26,7 +26,6 @@ Aplikacja została stworzona przy użyciu **Vue**, wykorzystując **Vue router**
 - Interaktywna lista rzeczy do spakowania
 - Dodawanie i zarządzanie rezerwacjami
 - Zarządzanie listą biletów
-- Przypomnienia, które pomogą Ci niczego nie zapomnieć
   
 ## Technologie
 
