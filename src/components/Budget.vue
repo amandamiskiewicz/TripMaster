@@ -4,7 +4,6 @@
       <h3 class="text-success">Travel Budget - {{ trip.name }}</h3>
     </div>
 
-    <!-- Budget Summary Section -->
     <div class="row mb-4 g-3">
       <div class="col-md-4">
         <div class="card text-white h-100 budget-card">
@@ -46,7 +45,6 @@
       </div>
     </div>
 
-    <!-- Add Expense Form -->
     <div class="card mb-4 border-success">
       <div class="card-body">
         <h4 class="card-title text-success mb-3">Add New Expense</h4>
@@ -106,7 +104,6 @@
       </div>
     </div>
 
-    <!-- Expense List -->
     <div v-if="expenses.length" class="card border-success">
       <div class="card-body">
         <h4 class="card-title text-success mb-3">Expenses</h4>
@@ -149,7 +146,6 @@
       </div>
     </div>
 
-    <!-- Tooltip -->
     <div 
       v-if="tooltip.visible" 
       class="custom-tooltip"
@@ -449,7 +445,6 @@ export default {
   color: #6c757d !important;
 }
 
-/* Tooltip Styles */
 .custom-tooltip {
   position: fixed;
   z-index: 1070;

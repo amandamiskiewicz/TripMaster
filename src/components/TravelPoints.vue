@@ -96,7 +96,6 @@ import L from "leaflet";
 import { db } from '../firebase';
 import { collection, addDoc, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 
-// Marker icons - updated to use green color scheme
 const blueIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -133,7 +132,7 @@ export default {
     },
     countryCoords: {
       type: Array,
-      default: () => [52.237049, 21.017532] // Default to Poland coordinates
+      default: () => [52.237049, 21.017532] 
     },
     initialZoom: {
       type: Number,
@@ -205,7 +204,6 @@ export default {
     },
 
     handleMapClick(e) {
-      // This method is now handled by the setupMapClickHandler
     },
 
     async centerToCurrentLocation() {

@@ -119,7 +119,6 @@
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteModal" class="modal-overlay">
       <div class="modal-content">
         <h5>Delete Category</h5>
@@ -508,7 +507,6 @@ export default {
   margin-bottom: 1rem;
 }
 
-/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
