@@ -1,130 +1,109 @@
 <template>
-  <div class="packing-list container-fluid p-3 p-md-4">
-    <div class="header d-flex justify-content-between align-items-center mb-4">
-      <h2 class="h4 mb-0 text-success">Packing List - {{ trip.name }}</h2>
-      <button @click="$emit('close')" class="btn btn-outline-secondary btn-sm" aria-label="Close packing list">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
+  <div class="container-fluid py-4 px-3 px-md-5">
+    <div class="row">
+      <div class="col-12">
+        <h2 class="mb-4 text-success">Packing List - {{ trip.name }}</h2>
 
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mb-4">
-      <div 
-        v-for="category in categories" 
-        :key="category.id"
-        class="col"
-      >
-        <div 
-          class="card h-100 border-0 shadow-sm"
-          :class="{ 'border-success': selectedCategory === category.name }"
-          @click="selectCategory(category.name)"
-        >
+        <div class="card shadow-sm mb-4">
           <div class="card-body">
-            <h3 class="h5 card-title text-success">{{ category.name }}</h3>
-            <div class="progress mb-2" style="height: 6px;">
+            <div class="categories">
               <div 
-                class="progress-bar bg-success" 
-                role="progressbar" 
-                :style="{ width: getProgress(category) + '%' }"
-                :aria-valuenow="getProgress(category)"
-                aria-valuemin="0"
-                aria-valuemax="100"
-              ></div>
+                v-for="category in categories" 
+                :key="category.id"
+                class="category-card"
+                :class="{ active: selectedCategory === category.name }"
+                @click="selectCategory(category.name)"
+              >
+                <div class="category-content">
+                  <h3>{{ category.name }}</h3>
+                  <div class="progress-container">
+                    <div class="progress-bar" :style="{ width: getProgress(category) + '%' }"></div>
+                  </div>
+                  <span class="progress-text">
+                    {{ getCheckedCount(category) }}/{{ category.items.length }} items
+                  </span>
+                </div>
+              </div>
             </div>
-            <p class="card-text small text-muted mb-0">
-              {{ getCheckedCount(category) }}/{{ category.items.length }} items
-            </p>
           </div>
         </div>
-      </div>
-    </div>
 
-    <div class="d-flex flex-column flex-md-row gap-2 mb-4">
-      <button 
-        @click="showAddCategory = true" 
-        class="btn btn-success flex-grow-1"
-        aria-label="Add new category"
-      >
-        <i class="fas fa-plus me-2"></i> Add New Category
-      </button>
-      <button 
-        @click="showAddItem = true" 
-        class="btn btn-outline-success flex-grow-1"
-        :disabled="!selectedCategory"
-        aria-label="Add new item to selected category"
-      >
-        <i class="fas fa-plus me-2"></i> Add Item to {{ selectedCategory || 'Category' }}
-      </button>
-    </div>
-
-    <div v-if="showAddCategory" class="card mb-4 border-success">
-      <div class="card-body">
-        <div class="input-group mb-3">
-          <input 
-            v-model="newCategory" 
-            placeholder="Enter category name"
-            class="form-control"
-            @keyup.enter="addCategory"
-            aria-label="Category name input"
-          >
-          <button @click="addCategory" class="btn btn-success" aria-label="Confirm adding category">
-            <i class="fas fa-check me-1"></i> Add
-          </button>
-          <button @click="showAddCategory = false" class="btn btn-outline-secondary" aria-label="Cancel adding category">
-            <i class="fas fa-times me-1"></i> Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="showAddItem" class="card mb-4 border-success">
-      <div class="card-body">
-        <div class="input-group mb-3">
-          <input 
-            v-model="newItem" 
-            :placeholder="'Add item to ' + selectedCategory"
-            class="form-control"
-            @keyup.enter="addItem"
-            aria-label="Item name input"
-          >
-          <button @click="addItem" class="btn btn-success" aria-label="Confirm adding item">
-            <i class="fas fa-check me-1"></i> Add
-          </button>
-          <button @click="showAddItem = false" class="btn btn-outline-secondary" aria-label="Cancel adding item">
-            <i class="fas fa-times me-1"></i> Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="selectedCategory" class="card border-0 shadow-sm">
-      <div class="card-body">
-        <h3 class="h5 card-title text-success mb-3">{{ selectedCategory }}</h3>
-        <div class="list-group">
-          <div 
-            v-for="item in getCurrentItems()" 
-            :key="item.id"
-            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-          >
-            <div class="form-check">
-              <input 
-                type="checkbox" 
-                v-model="item.checked"
-                @change="updateItem(item)"
-                class="form-check-input"
-                :id="'item-' + item.id"
-                :aria-label="(item.checked ? 'Unpack ' : 'Pack ') + item.name"
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <button @click="showAddCategory = true" class="btn btn-success px-4 py-2">
+                <i class="fas fa-plus"></i> Add New Category
+              </button>
+              <button 
+                @click="showAddItem = true" 
+                class="btn btn-outline-success px-4 py-2"
+                :disabled="!selectedCategory"
               >
-              <label 
-                class="form-check-label" 
-                :for="'item-' + item.id"
-                :class="{ 'text-muted text-decoration-line-through': item.checked }"
-              >
-                {{ item.name }}
-              </label>
+                <i class="fas fa-plus"></i> Add Item to {{ selectedCategory || 'Category' }}
+              </button>
             </div>
-            <button @click="deleteItem(item.id)" class="btn btn-link text-danger p-0" :aria-label="'Delete ' + item.name">
-              <i class="fas fa-trash-alt"></i>
-            </button>
+
+            <div v-if="showAddCategory" class="add-form mb-3">
+              <input 
+                v-model="newCategory" 
+                placeholder="Enter category name"
+                class="form-control mb-2"
+                @keyup.enter="addCategory"
+              >
+              <div class="d-flex gap-2">
+                <button @click="addCategory" class="btn btn-success flex-grow-1">
+                  <i class="fas fa-check"></i> Add
+                </button>
+                <button @click="showAddCategory = false" class="btn btn-outline-secondary flex-grow-1">
+                  <i class="fas fa-times"></i> Cancel
+                </button>
+              </div>
+            </div>
+
+            <div v-if="showAddItem" class="add-form mb-3">
+              <input 
+                v-model="newItem" 
+                :placeholder="'Add item to ' + selectedCategory"
+                class="form-control mb-2"
+                @keyup.enter="addItem"
+              >
+              <div class="d-flex gap-2">
+                <button @click="addItem" class="btn btn-success flex-grow-1">
+                  <i class="fas fa-check"></i> Add
+                </button>
+                <button @click="showAddItem = false" class="btn btn-outline-secondary flex-grow-1">
+                  <i class="fas fa-times"></i> Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="selectedCategory" class="card shadow-sm">
+          <div class="card-body">
+            <h4 class="text-success mb-3">{{ selectedCategory }}</h4>
+            <div class="items-list">
+              <div 
+                v-for="item in getCurrentItems()" 
+                :key="item.id"
+                class="item"
+              >
+                <label class="item-checkbox">
+                  <input 
+                    type="checkbox" 
+                    v-model="item.checked"
+                    @change="updateItem(item)"
+                  >
+                  <span class="checkmark"></span>
+                  <span class="item-name" :class="{ checked: item.checked }">
+                    {{ item.name }}
+                  </span>
+                </label>
+                <button @click="deleteItem(item.id)" class="btn btn-outline-danger btn-sm">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -134,7 +113,7 @@
 
 <script>
 import { db } from '../firebase';
-import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 
 export default {
   name: 'PackingList',
@@ -264,23 +243,145 @@ export default {
 </script>
 
 <style scoped>
-.packing-list {
-  background-color: #f8f9fa;
-  min-height: 100vh;
+.card {
+  border: none;
+  border-radius: 12px;
+  background-color: white;
 }
 
-.card {
-  transition: transform 0.2s, box-shadow 0.2s;
+.text-success {
+  color: #42b883 !important;
+}
+
+.categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.category-card {
+  background: white;
+  border-radius: 8px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.category-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.category-card.active {
+  background-color: rgba(66, 184, 131, 0.05);
+  box-shadow: 0 0 0 2px #42b883;
+}
+
+.category-content h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.progress-container {
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 3px;
+  margin-bottom: 5px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #42b883;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.progress-text {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.items-list {
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: white;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: white;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background-color 0.2s;
+}
+
+.item:hover {
+  background-color: #f9f9f9;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.item-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  flex-grow: 1;
+}
+
+.item-checkbox input {
+  position: absolute;
+  opacity: 0;
   cursor: pointer;
 }
 
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+.checkmark {
+  position: relative;
+  height: 20px;
+  width: 20px;
+  background-color: white;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  margin-right: 12px;
+  transition: all 0.2s;
 }
 
-.list-group-item {
-  transition: background-color 0.2s;
+.item-checkbox input:checked ~ .checkmark {
+  background-color: #42b883;
+  border-color: #42b883;
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.item-checkbox input:checked ~ .checkmark:after {
+  display: block;
+}
+
+.item-name {
+  color: #333;
+  transition: all 0.2s;
+}
+
+.item-name.checked {
+  color: #999;
+  text-decoration: line-through;
 }
 
 .btn-success {
@@ -289,8 +390,8 @@ export default {
 }
 
 .btn-success:hover {
-  background-color: #389d73;
-  border-color: #389d73;
+  background-color: #358d73;
+  border-color: #358d73;
 }
 
 .btn-outline-success {
@@ -302,8 +403,37 @@ export default {
   background-color: rgba(66, 184, 131, 0.1);
 }
 
-.form-check-input:checked {
-  background-color: #42b883;
+.btn-outline-danger {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-outline-danger:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+.form-control {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px 15px;
+}
+
+.form-control:focus {
   border-color: #42b883;
+  box-shadow: 0 0 0 0.2rem rgba(66, 184, 131, 0.25);
+}
+
+@media (max-width: 768px) {
+  .categories {
+    grid-template-columns: 1fr;
+  }
+  
+  .d-flex {
+    flex-direction: column;
+  }
+  
+  .btn, .form-control {
+    width: 100%;
+  }
 }
 </style>

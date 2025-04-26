@@ -31,11 +31,10 @@ Aplikacja została stworzona przy użyciu **Vue**, wykorzystując **Vue router**
 ## Technologie
 
 - **Vue**: framework JavaScript służący do budowy interfejsów użytkownika i aplikacji internetowych.
-- **Vue Router**: przechodzenie między "stronami" w aplikacji.
 - **Bootstrap**: framework CSS używany do stylowania.
-- **Firebase**: przechowywanie danych w bazie.
-- **Firebase** authentication: logowanie i rejestracja użytkowników
-- **Firebase** storage: przesyłanie i przechowywanie plików
+- **Firebase Database**: przechowywanie danych w bazie.
+- **Firebase authentication**: logowanie i rejestracja użytkowników
+- **Firebase storage**: przesyłanie i przechowywanie plików
   
 
   
